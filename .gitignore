@@ -5,3 +5,5 @@
 /frontend/.env
 
 /backend/logs
+
+/backend/vendor
