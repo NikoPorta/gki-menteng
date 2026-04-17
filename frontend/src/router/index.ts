@@ -19,8 +19,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'dashboard',
-      component: Dashboard,
-      meta: { requiresAuth: true }
+      component: Dashboard
     },
     {
       path: '/members',

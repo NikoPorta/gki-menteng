@@ -1,9 +1,9 @@
 <template>
   <div class="app-wrapper">
-    <Auth v-if="!authStore.isAuthenticated" />
+    <Auth v-if="route.name === 'login'" />
     <div v-else class="container-fluid p-0">
       <div class="row g-0">
-        <div class="col-auto">
+        <div v-if="authStore.isAuthenticated" class="col-auto">
           <Sidebar :class="{ 'show': sidebarOpen }" @click="sidebarOpen = false" />
         </div>
         <div class="col">
@@ -13,18 +13,24 @@
           </main>
         </div>
       </div>
-      <div v-if="sidebarOpen" class="sidebar-overlay d-lg-none" @click="sidebarOpen = false"></div>
+      <div
+        v-if="authStore.isAuthenticated && sidebarOpen"
+        class="sidebar-overlay d-lg-none"
+        @click="sidebarOpen = false"
+      ></div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import Auth from '@/views/Auth.vue'
 import Sidebar from './components/Sidebar.vue'
 import Header from './components/Header.vue'
 
+const route = useRoute()
 const authStore = useAuthStore()
 const sidebarOpen = ref(false)
 
