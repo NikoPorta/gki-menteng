@@ -86,13 +86,15 @@ import { useChurchStore } from '../stores/church'
 
 const churchStore = useChurchStore()
 
+const getTodayDate = (): string => new Date().toISOString().split('T')[0] ?? ''
+
 const newMember = ref({
   name: '',
   email: '',
   phone: '',
   role: '',
   status: 'active' as const,
-  joinDate: new Date().toISOString().split('T')[0]
+  joinDate: getTodayDate()
 })
 
 const formatDate = (date: string) => {
@@ -100,7 +102,18 @@ const formatDate = (date: string) => {
 }
 
 const addNewMember = () => {
-  churchStore.addMember(newMember.value)
+  if (!newMember.value.name || !newMember.value.email) {
+    return
+  }
+  const today = getTodayDate()
+  churchStore.addMember({
+    name: newMember.value.name,
+    email: newMember.value.email,
+    phone: newMember.value.phone || '',
+    role: newMember.value.role || '',
+    status: newMember.value.status || 'active',
+    joinDate: today
+  })
   // Close modal and reset form
   const modal = document.getElementById('addMemberModal')
   if (modal) {
@@ -114,7 +127,7 @@ const addNewMember = () => {
     phone: '',
     role: '',
     status: 'active',
-    joinDate: new Date().toISOString().split('T')[0]
+    joinDate: getTodayDate()
   }
 }
 </script>
