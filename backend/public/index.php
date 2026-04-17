@@ -2,6 +2,17 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// CORS headers - handle preflight immediately
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Access-Control-Max-Age: 86400');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    header('HTTP/1.1 204 No Content');
+    exit;
+}
+
 use Dotenv\Dotenv;
 use App\Core\Router;
 use App\Core\Request;
@@ -9,6 +20,7 @@ use App\Core\Response;
 use App\Core\Logger;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\RateLimitMiddleware;
+use App\Middleware\CorsMiddleware;
 use App\Controllers\AuthController;
 use App\Controllers\UserController;
 
@@ -41,6 +53,7 @@ $response = new Response();
 $router = new Router($request, $response);
 
 // Add global middleware
+$router->addGlobalMiddleware(new CorsMiddleware());
 $router->addGlobalMiddleware(new RateLimitMiddleware());
 
 // Public routes (no auth required)

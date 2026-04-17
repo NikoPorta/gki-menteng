@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
-import type { User as FirebaseUser } from 'firebase/auth'
-import { firebaseConfig } from '@/assets/firebase'
 
 interface User {
   id: number
@@ -14,50 +12,23 @@ interface AuthState {
   token: string | null
   loading: boolean
   error: string | null
-  firebaseUser: FirebaseUser | null
 }
 
-const API_URL = '/api'
+const API_URL = import.meta.env.VITE_API_URL;
 
-let auth: ReturnType<typeof import('firebase/auth').getAuth> | null = null
-let firebaseInitialized = false
-
-async function getFirebaseAuth() {
-  if (auth) return auth
-  
-  const { getAuth } = await import('firebase/auth')
-  const { initializeApp } = await import('firebase/app')
-  
-  if (!firebaseInitialized) {
-    initializeApp(firebaseConfig)
-    firebaseInitialized = true
-  }
-  auth = getAuth()
-  return auth
-}
-
-function useFirebaseAuth(): boolean {
-  const envValue = import.meta.env.VITE_ENVIRONMENT
-  console.log('[Auth] VITE_ENVIRONMENT =', envValue)
-  return envValue === 'Production'
-}
+const isProduction = import.meta.env.VITE_ENVIRONMENT === 'Production'
 
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     user: null,
     token: localStorage.getItem('token'),
     loading: false,
-    error: null,
-    firebaseUser: null
+    error: null
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.token || !!state.firebaseUser,
-    currentUser: (state) => state.user || (state.firebaseUser ? { 
-      id: 0, 
-      name: state.firebaseUser.displayName || state.firebaseUser.email?.split('@')[0] || 'User', 
-      email: state.firebaseUser.email || '' 
-    } : null)
+    isAuthenticated: (state) => !!state.token,
+    currentUser: (state) => state.user
   },
 
   actions: {
@@ -65,24 +36,21 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       
-      if (useFirebaseAuth()) {
-        try {
-          const firebaseAuth = await getFirebaseAuth()
-          const { signInWithEmailAndPassword } = await import('firebase/auth')
+      try {
+        if (isProduction) {
+          const { default: firebaseAuth } = await import('firebase/auth')
+          const { getAuth, signInWithEmailAndPassword } = await import('firebase/auth')
+          const { initializeApp } = await import('firebase/app')
+          const { firebaseConfig } = await import('@/assets/firebase')
           
-          const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password)
-          this.firebaseUser = userCredential.user
+          initializeApp(firebaseConfig)
+          const auth = getAuth()
+          
+          const userCredential = await signInWithEmailAndPassword(auth, email, password)
           this.token = await userCredential.user.getIdToken()
           localStorage.setItem('token', this.token!)
           return true
-        } catch (error) {
-          this.error = (error as Error).message || 'Login failed'
-          return false
-        } finally {
-          this.loading = false
-        }
-      } else {
-        try {
+        } else {
           const response = await axios.post(`${API_URL}/auth/login`, {
             email,
             password
@@ -95,16 +63,16 @@ export const useAuthStore = defineStore('auth', {
           axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
           
           return true
-        } catch (error) {
-          if (axios.isAxiosError(error)) {
-            this.error = error.response?.data?.message || 'Login failed'
-          } else {
-            this.error = 'Login failed'
-          }
-          return false
-        } finally {
-          this.loading = false
         }
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          this.error = error.response?.data?.message || 'Login failed'
+        } else {
+          this.error = 'Login failed'
+        }
+        return false
+      } finally {
+        this.loading = false
       }
     },
 
@@ -112,37 +80,27 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       
-      if (useFirebaseAuth()) {
-        try {
-          const firebaseAuth = await getFirebaseAuth()
-          const { createUserWithEmailAndPassword } = await import('firebase/auth')
+      try {
+        if (isProduction) {
+          const { getAuth, createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth')
+          const { initializeApp } = await import('firebase/app')
+          const { firebaseConfig } = await import('@/assets/firebase')
           
-          const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password)
-          this.firebaseUser = userCredential.user
+          initializeApp(firebaseConfig)
+          const auth = getAuth()
+          
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password)
           
           if (userCredential.user) {
-            const { updateProfile } = await import('firebase/auth')
             await updateProfile(userCredential.user, { displayName: name })
           }
           
           this.token = await userCredential.user.getIdToken()
           localStorage.setItem('token', this.token!)
           
-          this.user = {
-            id: 0,
-            name,
-            email
-          }
-          
+          this.user = { id: 0, name, email }
           return true
-        } catch (error) {
-          this.error = (error as Error).message || 'Registration failed'
-          return false
-        } finally {
-          this.loading = false
-        }
-      } else {
-        try {
+        } else {
           const response = await axios.post(`${API_URL}/auth/register`, {
             name,
             email,
@@ -151,16 +109,16 @@ export const useAuthStore = defineStore('auth', {
           
           this.user = response.data.user
           return true
-        } catch (error) {
-          if (axios.isAxiosError(error)) {
-            this.error = error.response?.data?.message || 'Registration failed'
-          } else {
-            this.error = 'Registration failed'
-          }
-          return false
-        } finally {
-          this.loading = false
         }
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          this.error = error.response?.data?.message || 'Registration failed'
+        } else {
+          this.error = 'Registration failed'
+        }
+        return false
+      } finally {
+        this.loading = false
       }
     },
 
@@ -168,8 +126,13 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       
       try {
-        if (useFirebaseAuth() && auth) {
-          const { signOut } = await import('firebase/auth')
+        if (isProduction) {
+          const { getAuth, signOut } = await import('firebase/auth')
+          const { initializeApp } = await import('firebase/app')
+          const { firebaseConfig } = await import('@/assets/firebase')
+          
+          initializeApp(firebaseConfig)
+          const auth = getAuth()
           await signOut(auth)
         }
       } catch (error) {
@@ -177,7 +140,6 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.token = null
         this.user = null
-        this.firebaseUser = null
         localStorage.removeItem('token')
         delete axios.defaults.headers.common['Authorization']
         this.loading = false
@@ -189,15 +151,6 @@ export const useAuthStore = defineStore('auth', {
       if (token) {
         this.token = token
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      }
-      
-      if (useFirebaseAuth()) {
-        getFirebaseAuth().then(async (firebaseAuth) => {
-          const { onAuthStateChanged } = await import('firebase/auth')
-          onAuthStateChanged(firebaseAuth, (user) => {
-            this.firebaseUser = user
-          })
-        })
       }
     }
   }
