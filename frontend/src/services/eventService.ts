@@ -25,7 +25,14 @@ export interface EventPayload {
   time: string
   location: string
   description: string
-  volunteers: string
+  volunteers?: string
+  worshipCommittee?: string[]
+  musician?: string[]
+  soundman?: string[]
+  multimedia?: string[]
+  streaming?: string[]
+  hasMultimedia?: boolean
+  hasStreaming?: boolean
 }
 
 const isProduction = import.meta.env.VITE_ENVIRONMENT === 'Production'

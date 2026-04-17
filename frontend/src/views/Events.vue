@@ -108,7 +108,14 @@
                     <div class="event-meta mb-3">
                       <p><i class="bi bi-calendar-date me-2"></i>{{ event.date }}</p>
                       <p><i class="bi bi-clock me-2"></i>{{ event.time }}</p>
-                      <p><i class="bi bi-people me-2"></i>Volunteer: {{ event.volunteers }}</p>
+                      <div class="volunteer-display">
+                        <p class="mb-1"><i class="bi bi-people me-2"></i>Volunteers:</p>
+                        <ul class="volunteer-list mb-0">
+                          <li v-for="vol in event.volunteers.split('; ').filter(Boolean)" :key="vol">
+                            {{ vol.replace(': ', ': ') }}
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                     <p class="mb-3">{{ event.description }}</p>
                     <div v-if="canManageEvents" class="d-flex gap-2">
@@ -168,23 +175,77 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label">Volunteers</label>
-                <div class="volunteer-checkboxes">
-                  <div v-for="volunteer in availableVolunteers" :key="volunteer" class="form-check">
-                    <input
-                      type="checkbox"
-                      class="form-check-input"
-                      :id="'volunteer-' + volunteer"
-                      :checked="selectedVolunteers.includes(volunteer)"
-                      @change="toggleVolunteer(volunteer)"
-                    >
-                    <label class="form-check-label" :for="'volunteer-' + volunteer">
-                      {{ volunteer }}
-                    </label>
-                  </div>
+                <label class="form-label fw-bold">Volunteers <span class="text-danger">*</span></label>
+                <p class="small text-muted mb-2">Select required volunteers and optional positions as needed.</p>
+                
+                <div class="volunteer-section mb-3">
+                  <label class="form-label small fw-bold text-gold">Worship Committee <span class="text-danger">*</span></label>
+                  <select v-model="form.worshipCommittee" class="form-select" multiple size="3">
+                    <option v-for="vol in volunteersByType['Worship Committee']" :key="vol.id" :value="vol.name">
+                      {{ vol.name }}
+                    </option>
+                  </select>
+                  <div class="form-text">Hold Ctrl/Cmd to select multiple</div>
                 </div>
-                <div v-if="!availableVolunteers.length" class="text-muted small">
-                  No volunteers available. Please add volunteers first.
+
+                <div class="volunteer-section mb-3">
+                  <label class="form-label small fw-bold text-gold">Musician <span class="text-danger">*</span></label>
+                  <select v-model="form.musician" class="form-select" multiple size="3">
+                    <option v-for="vol in volunteersByType['Musician']" :key="vol.id" :value="vol.name">
+                      {{ vol.name }}
+                    </option>
+                  </select>
+                  <div class="form-text">Hold Ctrl/Cmd to select multiple</div>
+                </div>
+
+                <div class="volunteer-section mb-3">
+                  <label class="form-label small fw-bold text-gold">Soundman <span class="text-danger">*</span></label>
+                  <select v-model="form.soundman" class="form-select" multiple size="3">
+                    <option v-for="vol in volunteersByType['Soundman']" :key="vol.id" :value="vol.name">
+                      {{ vol.name }}
+                    </option>
+                  </select>
+                  <div class="form-text">Hold Ctrl/Cmd to select multiple</div>
+                </div>
+
+                <div class="volunteer-section mb-3">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <label class="form-label small fw-bold text-gold mb-0">Multimedia</label>
+                    <div class="form-check form-check-inline">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        id="multimedia-needed"
+                        v-model="form.hasMultimedia"
+                      >
+                      <label class="form-check-label small text-muted" for="multimedia-needed">Need</label>
+                    </div>
+                  </div>
+                  <select v-model="form.multimedia" class="form-select" multiple size="3" :disabled="!form.hasMultimedia">
+                    <option v-for="vol in volunteersByType['Multimedia']" :key="vol.id" :value="vol.name">
+                      {{ vol.name }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="volunteer-section mb-3">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <label class="form-label small fw-bold text-gold mb-0">Streaming</label>
+                    <div class="form-check form-check-inline">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        id="streaming-needed"
+                        v-model="form.hasStreaming"
+                      >
+                      <label class="form-check-label small text-muted" for="streaming-needed">Need</label>
+                    </div>
+                  </div>
+                  <select v-model="form.streaming" class="form-select" multiple size="3" :disabled="!form.hasStreaming">
+                    <option v-for="vol in volunteersByType['Streaming']" :key="vol.id" :value="vol.name">
+                      {{ vol.name }}
+                    </option>
+                  </select>
                 </div>
               </div>
 
@@ -243,28 +304,33 @@ const form = reactive<EventPayload>({
   time: '',
   location: '',
   description: '',
-  volunteers: ''
+  worshipCommittee: [],
+  musician: [],
+  soundman: [],
+  multimedia: [],
+  streaming: [],
+  hasMultimedia: false,
+  hasStreaming: false
+})
+
+const volunteersByType = computed(() => {
+  const grouped: Record<string, Volunteer[]> = {
+    'Worship Committee': [],
+    'Musician': [],
+    'Soundman': [],
+    'Multimedia': [],
+    'Streaming': []
+  }
+  churchStore.volunteers.forEach((vol) => {
+    if (vol.service) {
+      const arr = grouped[vol.service]
+      if (arr) arr.push(vol)
+    }
+  })
+  return grouped
 })
 
 const selectedVolunteers = ref<string[]>([])
-
-const getVolunteerLabel = (volunteer: Volunteer) => {
-  return `${volunteer.name} (${volunteer.service})`
-}
-
-const availableVolunteers = computed(() => {
-  return churchStore.volunteers.map(getVolunteerLabel)
-})
-
-const toggleVolunteer = (volunteerLabel: string) => {
-  const index = selectedVolunteers.value.indexOf(volunteerLabel)
-  if (index === -1) {
-    selectedVolunteers.value.push(volunteerLabel)
-  } else {
-    selectedVolunteers.value.splice(index, 1)
-  }
-  form.volunteers = selectedVolunteers.value.join(', ')
-}
 
 const today = new Date()
 
@@ -338,14 +404,42 @@ const selectedDayEvents = computed(() => {
   return eventsByDate.value[selectedDateKey.value] ?? []
 })
 
+const formatVolunteersForDisplay = (volunteersStr: string) => {
+  if (!volunteersStr) return 'None'
+  return volunteersStr.split('; ').map(part => {
+    const [type, name] = part.split(': ')
+    return `${type}: ${name}`
+  }).join(', ')
+}
+
 const applyEventToForm = (event?: Event) => {
   form.title = event?.title ?? ''
   form.date = event?.date ?? selectedDateKey.value
   form.time = event?.time ?? ''
   form.location = event?.location ?? ''
   form.description = event?.description ?? ''
-  form.volunteers = event?.volunteers ?? ''
-  selectedVolunteers.value = event?.volunteers ? event.volunteers.split(', ').filter(Boolean) : []
+  
+  const volStr = event?.volunteers ?? ''
+  form.worshipCommittee = []
+  form.musician = []
+  form.soundman = []
+  form.multimedia = []
+  form.streaming = []
+  form.hasMultimedia = false
+  form.hasStreaming = false
+
+  if (volStr) {
+    const volParts = volStr.split('; ').filter(Boolean)
+    volParts.forEach((part) => {
+      const [type, ...nameParts] = part.split(': ')
+      const name = nameParts.join(': ')
+      if (type === 'Worship Committee') (form.worshipCommittee as string[]).push(name)
+      else if (type === 'Musician') (form.musician as string[]).push(name)
+      else if (type === 'Soundman') (form.soundman as string[]).push(name)
+      else if (type === 'Multimedia') { (form.multimedia as string[]).push(name); form.hasMultimedia = true }
+      else if (type === 'Streaming') { (form.streaming as string[]).push(name); form.hasStreaming = true }
+    })
+  }
 }
 
 const syncCalendarToEventData = () => {
@@ -400,8 +494,18 @@ const openCreateForm = async () => {
   showForm.value = true
   editingEventId.value = null
   formError.value = null
-  selectedVolunteers.value = []
-  form.volunteers = ''
+  form.title = ''
+  form.date = selectedDateKey.value
+  form.time = ''
+  form.location = ''
+  form.description = ''
+  form.worshipCommittee = []
+  form.musician = []
+  form.soundman = []
+  form.multimedia = []
+  form.streaming = []
+  form.hasMultimedia = false
+  form.hasStreaming = false
 }
 
 const openEditForm = (event: Event) => {
@@ -430,8 +534,20 @@ const resetForm = () => {
 }
 
 const validateForm = () => {
-  if (!form.title || !form.date || !form.time || !form.location || !form.description || !form.volunteers) {
+  if (!form.title || !form.date || !form.time || !form.location || !form.description) {
     return 'Please complete all event fields.'
+  }
+
+  if (!form.worshipCommittee?.length || !form.musician?.length || !form.soundman?.length) {
+    return 'Please select required volunteers (Worship Committee, Musician, Soundman).'
+  }
+
+  if (form.hasMultimedia && !form.multimedia?.length) {
+    return 'Please select Multimedia volunteer or uncheck "Need".'
+  }
+
+  if (form.hasStreaming && !form.streaming?.length) {
+    return 'Please select Streaming volunteer or uncheck "Need".'
   }
 
   return null
@@ -450,12 +566,24 @@ const submitForm = async () => {
 
   submitting.value = true
 
+  const volunteers: string[] = []
+  if (form.worshipCommittee?.length) volunteers.push(`Worship Committee: ${form.worshipCommittee.join(', ')}`)
+  if (form.musician?.length) volunteers.push(`Musician: ${form.musician.join(', ')}`)
+  if (form.soundman?.length) volunteers.push(`Soundman: ${form.soundman.join(', ')}`)
+  if (form.hasMultimedia && form.multimedia?.length) volunteers.push(`Multimedia: ${form.multimedia.join(', ')}`)
+  if (form.hasStreaming && form.streaming?.length) volunteers.push(`Streaming: ${form.streaming.join(', ')}`)
+
+  const payload = {
+    ...form,
+    volunteers: volunteers.join('; ')
+  }
+
   try {
     if (isEditing.value && editingEventId.value) {
-      const updatedEvent = await churchStore.updateEvent(editingEventId.value, { ...form })
+      const updatedEvent = await churchStore.updateEvent(editingEventId.value, payload)
       selectDay(updatedEvent.date)
     } else {
-      const createdEvent = await churchStore.createEvent({ ...form })
+      const createdEvent = await churchStore.createEvent(payload)
       selectDay(createdEvent.date)
     }
 
@@ -671,6 +799,22 @@ onMounted(async () => {
   margin-bottom: 0.5rem;
 }
 
+.volunteer-display {
+  margin-left: 1.5rem;
+}
+
+.volunteer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.volunteer-list li {
+  padding: 0.2rem 0;
+  font-size: 0.9rem;
+  color: #4c3c2b;
+}
+
 .event-form .form-control {
   border-radius: 14px;
   border-color: rgba(155, 123, 69, 0.2);
@@ -715,6 +859,21 @@ onMounted(async () => {
 .volunteer-checkboxes .form-check-input:checked {
   background-color: #9b7b45;
   border-color: #9b7b45;
+}
+
+.volunteer-section {
+  padding: 0.75rem;
+  border: 1px solid rgba(155, 123, 69, 0.15);
+  border-radius: 12px;
+  background: rgba(255, 252, 246, 0.5);
+}
+
+.volunteer-section .form-label {
+  color: #4c3c2b;
+}
+
+.text-gold {
+  color: #9b7b45;
 }
 
 @media (max-width: 991.98px) {
