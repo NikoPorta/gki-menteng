@@ -3,7 +3,7 @@
     <Auth v-if="route.name === 'login'" />
     <div v-else class="container-fluid p-0">
       <div class="row g-0">
-        <div v-if="authStore.isAuthenticated" class="col-auto">
+        <div class="col-auto">
           <Sidebar :class="{ 'show': sidebarOpen }" @click="sidebarOpen = false" />
         </div>
         <div class="col">
@@ -13,11 +13,7 @@
           </main>
         </div>
       </div>
-      <div
-        v-if="authStore.isAuthenticated && sidebarOpen"
-        class="sidebar-overlay d-lg-none"
-        @click="sidebarOpen = false"
-      ></div>
+      <div v-if="sidebarOpen" class="sidebar-overlay d-lg-none" @click="sidebarOpen = false"></div>
     </div>
   </div>
 </template>

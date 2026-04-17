@@ -13,8 +13,7 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: Auth,
-      meta: { guest: true }
+      component: Auth
     },
     {
       path: '/',
@@ -24,26 +23,22 @@ const router = createRouter({
     {
       path: '/members',
       name: 'members',
-      component: Members,
-      meta: { requiresAuth: true }
+      component: Members
     },
     {
       path: '/events',
       name: 'events',
-      component: Events,
-      meta: { requiresAuth: true }
+      component: Events
     },
     {
       path: '/donations',
       name: 'donations',
-      component: Donations,
-      meta: { requiresAuth: true }
+      component: Donations
     },
     {
       path: '/reports',
       name: 'reports',
-      component: Reports,
-      meta: { requiresAuth: true }
+      component: Reports
     }
   ]
 })
@@ -51,14 +46,8 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   authStore.initAuth()
-  
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-  } else if (to.meta.guest && authStore.isAuthenticated) {
-    next('/')
-  } else {
-    next()
-  }
+
+  next()
 })
 
 export default router

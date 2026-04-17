@@ -1,12 +1,7 @@
 <template>
   <header class="bg-white shadow-sm p-3 d-flex justify-content-between align-items-center">
     <div class="d-flex align-items-center">
-      <button
-        v-if="authStore.isAuthenticated"
-        class="btn btn-link d-lg-none me-3 p-0"
-        type="button"
-        @click="$emit('toggle-sidebar')"
-      >
+      <button class="btn btn-link d-lg-none me-3 p-0" type="button" @click="$emit('toggle-sidebar')">
         <i class="bi bi-list fs-4 text-dark"></i>
       </button>
       <div>
