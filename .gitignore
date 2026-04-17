@@ -7,3 +7,6 @@
 /backend/logs
 
 /frontend/package-lock.json
+
+/frontend/.env.development
+/frontend/.env.production

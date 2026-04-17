@@ -1,29 +1,43 @@
 <template>
-  <div class="container-fluid p-0">
-    <div class="row g-0">
-      <div class="col-auto">
-        <Sidebar :class="{ 'show': sidebarOpen }" @click="sidebarOpen = false" />
+  <div class="app-wrapper">
+    <Auth v-if="!authStore.isAuthenticated" />
+    <div v-else class="container-fluid p-0">
+      <div class="row g-0">
+        <div class="col-auto">
+          <Sidebar :class="{ 'show': sidebarOpen }" @click="sidebarOpen = false" />
+        </div>
+        <div class="col">
+          <Header @toggle-sidebar="sidebarOpen = !sidebarOpen" />
+          <main>
+            <router-view />
+          </main>
+        </div>
       </div>
-      <div class="col">
-        <Header @toggle-sidebar="sidebarOpen = !sidebarOpen" />
-        <main>
-          <router-view />
-        </main>
-      </div>
+      <div v-if="sidebarOpen" class="sidebar-overlay d-lg-none" @click="sidebarOpen = false"></div>
     </div>
-    <div v-if="sidebarOpen" class="sidebar-overlay d-lg-none" @click="sidebarOpen = false"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import Auth from '@/views/Auth.vue'
 import Sidebar from './components/Sidebar.vue'
 import Header from './components/Header.vue'
 
+const authStore = useAuthStore()
 const sidebarOpen = ref(false)
+
+onMounted(() => {
+  authStore.initAuth()
+})
 </script>
 
 <style>
+.app-wrapper {
+  min-height: 100vh;
+}
+
 .container-fluid {
   padding: 0;
   overflow: hidden;

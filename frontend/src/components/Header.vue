@@ -24,13 +24,13 @@
       <div class="dropdown">
         <button class="btn btn-link dropdown-toggle text-dark" type="button" data-bs-toggle="dropdown">
           <i class="bi bi-person-circle fs-4"></i>
-          <span class="ms-2 d-none d-sm-inline">Admin User</span>
+          <span class="ms-2 d-none d-sm-inline">{{ authStore.currentUser?.name || 'User' }}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
           <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+          <li><a class="dropdown-item" href="#" @click.prevent="handleLogout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
         </ul>
       </div>
     </div>
@@ -38,5 +38,16 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
 defineEmits(['toggle-sidebar'])
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
+}
 </script>
