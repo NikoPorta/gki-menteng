@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { eventService, type EventPayload, type EventRecord } from '@/services/eventService'
 
 export interface Member {
   id: number
@@ -10,15 +11,7 @@ export interface Member {
   role: string
 }
 
-export interface Event {
-  id: number
-  title: string
-  date: string
-  time: string
-  location: string
-  description: string
-  attendees: number
-}
+export interface Event extends EventRecord {}
 
 export interface Donation {
   id: number
@@ -28,8 +21,17 @@ export interface Donation {
   purpose: string
 }
 
+interface ChurchState {
+  members: Member[]
+  events: Event[]
+  donations: Donation[]
+  eventsLoading: boolean
+  eventsLoaded: boolean
+  eventsError: string | null
+}
+
 export const useChurchStore = defineStore('church', {
-  state: () => ({
+  state: (): ChurchState => ({
     members: [
       {
         id: 1,
@@ -76,47 +78,8 @@ export const useChurchStore = defineStore('church', {
         status: 'active',
         role: 'Deacon'
       }
-    ] as Member[],
-    
-    events: [
-      {
-        id: 1,
-        title: 'Sunday Morning Worship',
-        date: '2024-12-15',
-        time: '10:00 AM',
-        location: 'Main Sanctuary',
-        description: 'Join us for a powerful worship experience',
-        attendees: 245
-      },
-      {
-        id: 2,
-        title: 'Bible Study Group',
-        date: '2024-12-16',
-        time: '7:00 PM',
-        location: 'Fellowship Hall',
-        description: 'Deep dive into the Book of Psalms',
-        attendees: 89
-      },
-      {
-        id: 3,
-        title: 'Youth Ministry Meeting',
-        date: '2024-12-17',
-        time: '6:30 PM',
-        location: 'Youth Center',
-        description: 'Activities and fellowship for teens',
-        attendees: 56
-      },
-      {
-        id: 4,
-        title: 'Prayer Vigil',
-        date: '2024-12-18',
-        time: '8:00 PM',
-        location: 'Prayer Room',
-        description: 'Night of prayer and intercession',
-        attendees: 34
-      }
-    ] as Event[],
-    
+    ],
+    events: [],
     donations: [
       {
         id: 1,
@@ -153,34 +116,104 @@ export const useChurchStore = defineStore('church', {
         date: '2024-12-10',
         purpose: 'Building Fund'
       }
-    ] as Donation[]
+    ],
+    eventsLoading: false,
+    eventsLoaded: false,
+    eventsError: null
   }),
-  
+
   getters: {
     totalMembers: (state) => state.members.length,
-    activeMembers: (state) => state.members.filter(m => m.status === 'active').length,
-    upcomingEvents: (state) => state.events.slice(0, 3),
-    totalDonations: (state) => state.donations.reduce((sum, d) => sum + d.amount, 0),
+    activeMembers: (state) => state.members.filter((member) => member.status === 'active').length,
+    upcomingEvents: (state) => [...state.events]
+      .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+      .slice(0, 3),
+    totalDonations: (state) => state.donations.reduce((sum, donation) => sum + donation.amount, 0),
     buildingFundTotal: (state) => state.donations
-      .filter(d => d.purpose === 'Building Fund')
-      .reduce((sum, d) => sum + d.amount, 0),
+      .filter((donation) => donation.purpose === 'Building Fund')
+      .reduce((sum, donation) => sum + donation.amount, 0),
     recentDonations: (state) => state.donations.slice(0, 5)
   },
-  
+
   actions: {
     addMember(member: Omit<Member, 'id'>) {
-      const newId = Math.max(...this.members.map(m => m.id)) + 1
+      const newId = Math.max(...this.members.map((item) => item.id)) + 1
       this.members.push({ ...member, id: newId })
     },
-    
-    addEvent(event: Omit<Event, 'id'>) {
-      const newId = Math.max(...this.events.map(e => e.id)) + 1
-      this.events.push({ ...event, id: newId })
+
+    async loadEvents(force = false) {
+      if (this.eventsLoading || (this.eventsLoaded && !force)) {
+        return
+      }
+
+      this.eventsLoading = true
+      this.eventsError = null
+
+      try {
+        this.events = await eventService.list()
+        this.eventsLoaded = true
+      } catch (error) {
+        this.eventsError = error instanceof Error ? error.message : 'Failed to load events'
+        throw error
+      } finally {
+        this.eventsLoading = false
+      }
     },
-    
+
+    async createEvent(payload: EventPayload) {
+      this.eventsError = null
+
+      try {
+        const createdEvent = await eventService.create(payload)
+        this.events.push(createdEvent)
+        this.sortEvents()
+        return createdEvent
+      } catch (error) {
+        this.eventsError = error instanceof Error ? error.message : 'Failed to create event'
+        throw error
+      }
+    },
+
+    async updateEvent(id: string, payload: EventPayload) {
+      this.eventsError = null
+
+      try {
+        const updatedEvent = await eventService.update(id, payload)
+        const index = this.events.findIndex((event) => event.id === id)
+
+        if (index >= 0) {
+          this.events[index] = updatedEvent
+        } else {
+          this.events.push(updatedEvent)
+        }
+
+        this.sortEvents()
+        return updatedEvent
+      } catch (error) {
+        this.eventsError = error instanceof Error ? error.message : 'Failed to update event'
+        throw error
+      }
+    },
+
+    async deleteEvent(id: string) {
+      this.eventsError = null
+
+      try {
+        await eventService.remove(id)
+        this.events = this.events.filter((event) => event.id !== id)
+      } catch (error) {
+        this.eventsError = error instanceof Error ? error.message : 'Failed to delete event'
+        throw error
+      }
+    },
+
     addDonation(donation: Omit<Donation, 'id'>) {
-      const newId = Math.max(...this.donations.map(d => d.id)) + 1
+      const newId = Math.max(...this.donations.map((item) => item.id)) + 1
       this.donations.push({ ...donation, id: newId })
+    },
+
+    sortEvents() {
+      this.events = [...this.events].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
     }
   }
 })

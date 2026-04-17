@@ -73,14 +73,16 @@ class Router
         
         // Create middleware chain
         $next = function($request, $response) use ($handler) {
+            $routeParams = $request->routeParams ?? [];
+
             if (is_callable($handler)) {
-                return $handler($request, $response);
+                return $handler($request, $response, ...array_values($routeParams));
             }
             
             if (is_array($handler)) {
                 $controller = new $handler[0]();
                 $method = $handler[1];
-                return $controller->$method($request, $response);
+                return $controller->$method($request, $response, ...array_values($routeParams));
             }
             
             return $response->error('Invalid handler', 500);
@@ -109,9 +111,17 @@ class Router
                 continue;
             }
             
-            $pattern = $this->convertPathToRegex($route['path']);
+            $paramNames = [];
+            $pattern = $this->convertPathToRegex($route['path'], $paramNames);
             
-            if (preg_match($pattern, $path)) {
+            if (preg_match($pattern, $path, $matches)) {
+                $params = [];
+
+                foreach ($paramNames as $index => $name) {
+                    $params[$name] = $matches[$index + 1] ?? null;
+                }
+
+                $this->request->routeParams = $params;
                 return $route;
             }
         }
@@ -119,9 +129,13 @@ class Router
         return null;
     }
 
-    private function convertPathToRegex(string $path): string
+    private function convertPathToRegex(string $path, array &$paramNames = []): string
     {
-        $pattern = preg_replace('/\{([a-z]+)\}/', '([^/]+)', $path);
+        $pattern = preg_replace_callback('/\{([a-z]+)\}/', function ($matches) use (&$paramNames) {
+            $paramNames[] = $matches[1];
+            return '([^/]+)';
+        }, $path);
+
         return '#^' . $pattern . '$#';
     }
 }

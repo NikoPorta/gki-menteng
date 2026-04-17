@@ -1,5 +1,12 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile
+} from 'firebase/auth'
+import { firebaseAuth } from '@/assets/firebase'
 
 interface User {
   id: number
@@ -14,9 +21,27 @@ interface AuthState {
   error: string | null
 }
 
-const API_URL = import.meta.env.VITE_API_URL;
-
 const isProduction = import.meta.env.VITE_ENVIRONMENT === 'Production'
+const API_URL = isProduction
+  ? (import.meta.env.VITE_API_URL || '/api')
+  : '/api'
+
+const setAxiosAuthHeader = (token: string | null) => {
+  if (token) {
+    axios.defaults.headers.common.Authorization = `Bearer ${token}`
+    return
+  }
+
+  delete axios.defaults.headers.common.Authorization
+}
+
+const getFirebaseAuth = () => {
+  if (!firebaseAuth) {
+    throw new Error('Firebase Auth is not configured for this environment.')
+  }
+
+  return firebaseAuth
+}
 
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
@@ -35,39 +60,38 @@ export const useAuthStore = defineStore('auth', {
     async login(email: string, password: string) {
       this.loading = true
       this.error = null
-      
+
       try {
         if (isProduction) {
-          const { default: firebaseAuth } = await import('firebase/auth')
-          const { getAuth, signInWithEmailAndPassword } = await import('firebase/auth')
-          const { initializeApp } = await import('firebase/app')
-          const { firebaseConfig } = await import('@/assets/firebase')
-          
-          initializeApp(firebaseConfig)
-          const auth = getAuth()
-          
-          const userCredential = await signInWithEmailAndPassword(auth, email, password)
+          const userCredential = await signInWithEmailAndPassword(getFirebaseAuth(), email, password)
+
           this.token = await userCredential.user.getIdToken()
-          localStorage.setItem('token', this.token!)
-          return true
-        } else {
-          const response = await axios.post(`${API_URL}/auth/login`, {
-            email,
-            password
-          })
-          
-          this.token = response.data.token || ''
-          this.user = response.data.user
-          if (this.token) {
-            localStorage.setItem('token', this.token)
-            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+          this.user = {
+            id: 0,
+            name: userCredential.user.displayName || '',
+            email: userCredential.user.email || email
           }
-          
+
+          localStorage.setItem('token', this.token)
+          setAxiosAuthHeader(this.token)
           return true
         }
+
+        const response = await axios.post(`${API_URL}/auth/login`, { email, password })
+        const payload = response.data?.data
+
+        this.token = payload?.token || ''
+        this.user = payload?.user || null
+
+        if (this.token) {
+          localStorage.setItem('token', this.token)
+          setAxiosAuthHeader(this.token)
+        }
+
+        return true
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          this.error = error.response?.data?.message || 'Login failed'
+          this.error = error.response?.data?.error || 'Login failed'
         } else {
           this.error = 'Login failed'
         }
@@ -80,40 +104,34 @@ export const useAuthStore = defineStore('auth', {
     async register(name: string, email: string, password: string) {
       this.loading = true
       this.error = null
-      
+
       try {
         if (isProduction) {
-          const { getAuth, createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth')
-          const { initializeApp } = await import('firebase/app')
-          const { firebaseConfig } = await import('@/assets/firebase')
-          
-          initializeApp(firebaseConfig)
-          const auth = getAuth()
-          
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-          
+          const userCredential = await createUserWithEmailAndPassword(getFirebaseAuth(), email, password)
+
           if (userCredential.user) {
             await updateProfile(userCredential.user, { displayName: name })
           }
-          
+
           this.token = await userCredential.user.getIdToken()
-          localStorage.setItem('token', this.token!)
-          
           this.user = { id: 0, name, email }
-          return true
-        } else {
-          const response = await axios.post(`${API_URL}/auth/register`, {
-            name,
-            email,
-            password
-          })
-          
-          this.user = response.data.user
+
+          localStorage.setItem('token', this.token)
+          setAxiosAuthHeader(this.token)
           return true
         }
+
+        const response = await axios.post(`${API_URL}/auth/register`, {
+          name,
+          email,
+          password
+        })
+
+        this.user = response.data?.data?.user || null
+        return true
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          this.error = error.response?.data?.message || 'Registration failed'
+          this.error = error.response?.data?.error || 'Registration failed'
         } else {
           this.error = 'Registration failed'
         }
@@ -125,16 +143,10 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       this.loading = true
-      
+
       try {
         if (isProduction) {
-          const { getAuth, signOut } = await import('firebase/auth')
-          const { initializeApp } = await import('firebase/app')
-          const { firebaseConfig } = await import('@/assets/firebase')
-          
-          initializeApp(firebaseConfig)
-          const auth = getAuth()
-          await signOut(auth)
+          await signOut(getFirebaseAuth())
         }
       } catch (error) {
         console.error('Logout error:', error)
@@ -142,7 +154,7 @@ export const useAuthStore = defineStore('auth', {
         this.token = null
         this.user = null
         localStorage.removeItem('token')
-        delete axios.defaults.headers.common['Authorization']
+        setAxiosAuthHeader(null)
         this.loading = false
       }
     },
@@ -151,7 +163,7 @@ export const useAuthStore = defineStore('auth', {
       const token = localStorage.getItem('token')
       if (token) {
         this.token = token
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        setAxiosAuthHeader(token)
       }
     }
   }

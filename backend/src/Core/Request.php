@@ -5,6 +5,7 @@ namespace App\Core;
 class Request
 {
     public ?object $user = null;
+    public array $routeParams = [];
 
     public function getMethod(): string
     {
