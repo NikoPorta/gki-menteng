@@ -1,5 +1,5 @@
 {
-    "name": "php-backend/api",
+    "name": "backend/api",
     "autoload": {
         "psr-4": {
             "App\\": "src/"

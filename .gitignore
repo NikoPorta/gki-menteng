@@ -1,4 +1,4 @@
-/backend/node_modules
+/backend/vendor
 /frontend/node_modules
 
 /backend/.env
@@ -6,4 +6,4 @@
 
 /backend/logs
 
-/backend/vendor
+/frontend/package-lock.json

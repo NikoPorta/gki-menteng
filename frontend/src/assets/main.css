@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: linear-gradient(135deg, #f5e6d3 0%, #e8d5b7 100%);
+  color: #2c1810;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 600;
+}
+
+.luxury-gradient {
+  background: linear-gradient(135deg, #d4af37 0%, #f5e6b2 50%, #d4af37 100%);
+}
+
+.gold-text {
+  color: #d4af37;
+}
+
+.church-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  transition: all 0.3s ease;
+}
+
+.church-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 48px 0 rgba(212, 175, 55, 0.2);
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+.luxury-btn {
+  background: linear-gradient(135deg, #d4af37 0%, #b8960c 100%);
+  border: none;
+  color: #2c1810;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+}
+
+.luxury-btn:hover {
+  background: linear-gradient(135deg, #e5c158 0%, #c9a820 100%);
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+}
+
+.cross-icon {
+  color: #d4af37;
+  font-size: 2rem;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, #1a0f0a 0%, #2c1810 100%);
+  color: #f5e6d3;
+  min-height: 100vh;
+}
+
+.sidebar .nav-link {
+  color: #f5e6d3;
+  padding: 12px 20px;
+  margin: 5px 0;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.sidebar .nav-link:hover {
+  background: rgba(212, 175, 55, 0.2);
+  color: #d4af37;
+  transform: translateX(5px);
+}
+
+.sidebar .nav-link.active {
+  background: linear-gradient(90deg, #d4af37 0%, #b8960c 100%);
+  color: #1a0f0a;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  border-left: 5px solid #d4af37;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
