@@ -16,7 +16,7 @@ export interface EventRecord {
   time: string
   location: string
   description: string
-  attendees: number
+  volunteers: string
 }
 
 export interface EventPayload {
@@ -25,13 +25,11 @@ export interface EventPayload {
   time: string
   location: string
   description: string
-  attendees: number
+  volunteers: string
 }
 
 const isProduction = import.meta.env.VITE_ENVIRONMENT === 'Production'
-const API_URL = isProduction
-  ? (import.meta.env.VITE_API_URL || '/api')
-  : '/api'
+const API_URL = import.meta.env.VITE_API_URL;
 const EVENTS_COLLECTION = 'events'
 
 const normalizeEvent = (event: Partial<EventRecord> & { id: string | number }): EventRecord => ({
@@ -41,7 +39,7 @@ const normalizeEvent = (event: Partial<EventRecord> & { id: string | number }): 
   time: event.time ?? '',
   location: event.location ?? '',
   description: event.description ?? '',
-  attendees: Number(event.attendees ?? 0)
+  volunteers: event.volunteers ?? ''
 })
 
 const sortEvents = (events: EventRecord[]) => {
@@ -107,7 +105,7 @@ export const eventService = {
         time: payload.time,
         location: payload.location,
         description: payload.description,
-        attendees: payload.attendees
+        volunteers: payload.volunteers
       })
       return normalizeEvent({ id, ...payload })
     }

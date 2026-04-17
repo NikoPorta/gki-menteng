@@ -108,7 +108,7 @@
                     <div class="event-meta mb-3">
                       <p><i class="bi bi-calendar-date me-2"></i>{{ event.date }}</p>
                       <p><i class="bi bi-clock me-2"></i>{{ event.time }}</p>
-                      <p><i class="bi bi-people me-2"></i>{{ event.attendees }} attendees registered</p>
+                      <p><i class="bi bi-people me-2"></i>Volunteer: {{ event.volunteers }}</p>
                     </div>
                     <p class="mb-3">{{ event.description }}</p>
                     <div v-if="canManageEvents" class="d-flex gap-2">
@@ -168,8 +168,24 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label">Attendees</label>
-                <input v-model.number="form.attendees" type="number" min="0" class="form-control" required>
+                <label class="form-label">Volunteers</label>
+                <div class="volunteer-checkboxes">
+                  <div v-for="volunteer in availableVolunteers" :key="volunteer" class="form-check">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      :id="'volunteer-' + volunteer"
+                      :checked="selectedVolunteers.includes(volunteer)"
+                      @change="toggleVolunteer(volunteer)"
+                    >
+                    <label class="form-check-label" :for="'volunteer-' + volunteer">
+                      {{ volunteer }}
+                    </label>
+                  </div>
+                </div>
+                <div v-if="!availableVolunteers.length" class="text-muted small">
+                  No volunteers available. Please add volunteers first.
+                </div>
               </div>
 
               <div class="mb-3">
@@ -205,7 +221,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useChurchStore, type Event } from '@/stores/church'
+import { useChurchStore, type Event, type Volunteer } from '@/stores/church'
 import { useAuthStore } from '@/stores/auth'
 import type { EventPayload } from '@/services/eventService'
 
@@ -227,8 +243,28 @@ const form = reactive<EventPayload>({
   time: '',
   location: '',
   description: '',
-  attendees: 0
+  volunteers: ''
 })
+
+const selectedVolunteers = ref<string[]>([])
+
+const getVolunteerLabel = (volunteer: Volunteer) => {
+  return `${volunteer.name} (${volunteer.service})`
+}
+
+const availableVolunteers = computed(() => {
+  return churchStore.volunteers.map(getVolunteerLabel)
+})
+
+const toggleVolunteer = (volunteerLabel: string) => {
+  const index = selectedVolunteers.value.indexOf(volunteerLabel)
+  if (index === -1) {
+    selectedVolunteers.value.push(volunteerLabel)
+  } else {
+    selectedVolunteers.value.splice(index, 1)
+  }
+  form.volunteers = selectedVolunteers.value.join(', ')
+}
 
 const today = new Date()
 
@@ -308,7 +344,8 @@ const applyEventToForm = (event?: Event) => {
   form.time = event?.time ?? ''
   form.location = event?.location ?? ''
   form.description = event?.description ?? ''
-  form.attendees = event?.attendees ?? 0
+  form.volunteers = event?.volunteers ?? ''
+  selectedVolunteers.value = event?.volunteers ? event.volunteers.split(', ').filter(Boolean) : []
 }
 
 const syncCalendarToEventData = () => {
@@ -351,15 +388,20 @@ const goToNextMonth = () => {
   )
 }
 
-const openCreateForm = () => {
+const openCreateForm = async () => {
   if (!canManageEvents.value) {
     return
+  }
+
+  if (!churchStore.volunteersLoaded) {
+    await churchStore.loadVolunteers()
   }
 
   showForm.value = true
   editingEventId.value = null
   formError.value = null
-  applyEventToForm()
+  selectedVolunteers.value = []
+  form.volunteers = ''
 }
 
 const openEditForm = (event: Event) => {
@@ -388,12 +430,8 @@ const resetForm = () => {
 }
 
 const validateForm = () => {
-  if (!form.title || !form.date || !form.time || !form.location || !form.description) {
+  if (!form.title || !form.date || !form.time || !form.location || !form.description || !form.volunteers) {
     return 'Please complete all event fields.'
-  }
-
-  if (form.attendees < 0) {
-    return 'Attendees cannot be negative.'
   }
 
   return null
@@ -654,6 +692,29 @@ onMounted(async () => {
 
 .compact-empty {
   min-height: 320px;
+}
+
+.volunteer-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.volunteer-checkboxes .form-check {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(155, 123, 69, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 252, 246, 0.7);
+}
+
+.volunteer-checkboxes .form-check-input {
+  margin-right: 0.5rem;
+}
+
+.volunteer-checkboxes .form-check-input:checked {
+  background-color: #9b7b45;
+  border-color: #9b7b45;
 }
 
 @media (max-width: 991.98px) {

@@ -22,9 +22,7 @@ interface AuthState {
 }
 
 const isProduction = import.meta.env.VITE_ENVIRONMENT === 'Production'
-const API_URL = isProduction
-  ? (import.meta.env.VITE_API_URL || '/api')
-  : '/api'
+const API_URL = import.meta.env.VITE_API_URL;
 
 const setAxiosAuthHeader = (token: string | null) => {
   if (token) {

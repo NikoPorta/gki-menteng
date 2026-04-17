@@ -2,8 +2,8 @@
   <div class="sidebar p-4">
     <div class="text-center mb-5">
       <i class="bi bi-church cross-icon" style="font-size: 3rem;"></i>
-      <h3 class="mt-3 gold-text">Grace Cathedral</h3>
-      <p class="small text-muted">Est. 1924</p>
+      <h3 class="mt-3 gold-text">GKI Menteng</h3>
+      <p class="small text-muted">Est. 1965</p>
     </div>
     
     <nav class="nav flex-column">
@@ -18,6 +18,10 @@
       <router-link to="/events" class="nav-link mb-2">
         <i class="bi bi-calendar-event-fill me-2"></i>
         <span class="nav-text">Events</span>
+      </router-link>
+      <router-link to="/volunteers" class="nav-link mb-2">
+        <i class="bi bi-mic-fill me-2"></i>
+        <span class="nav-text">Volunteers</span>
       </router-link>
       <router-link to="/donations" class="nav-link mb-2">
         <i class="bi bi-gift-fill me-2"></i>

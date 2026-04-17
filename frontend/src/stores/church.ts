@@ -1,5 +1,10 @@
 import { defineStore } from 'pinia'
 import { eventService, type EventPayload, type EventRecord } from '@/services/eventService'
+import {
+  volunteerService,
+  type VolunteerPayload,
+  type VolunteerRecord
+} from '@/services/volunteerService'
 
 export interface Member {
   id: number
@@ -12,6 +17,7 @@ export interface Member {
 }
 
 export interface Event extends EventRecord {}
+export interface Volunteer extends VolunteerRecord {}
 
 export interface Donation {
   id: number
@@ -24,10 +30,14 @@ export interface Donation {
 interface ChurchState {
   members: Member[]
   events: Event[]
+  volunteers: Volunteer[]
   donations: Donation[]
   eventsLoading: boolean
   eventsLoaded: boolean
   eventsError: string | null
+  volunteersLoading: boolean
+  volunteersLoaded: boolean
+  volunteersError: string | null
 }
 
 export const useChurchStore = defineStore('church', {
@@ -80,6 +90,7 @@ export const useChurchStore = defineStore('church', {
       }
     ],
     events: [],
+    volunteers: [],
     donations: [
       {
         id: 1,
@@ -119,7 +130,10 @@ export const useChurchStore = defineStore('church', {
     ],
     eventsLoading: false,
     eventsLoaded: false,
-    eventsError: null
+    eventsError: null,
+    volunteersLoading: false,
+    volunteersLoaded: false,
+    volunteersError: null
   }),
 
   getters: {
@@ -207,6 +221,73 @@ export const useChurchStore = defineStore('church', {
       }
     },
 
+    async loadVolunteers(force = false) {
+      if (this.volunteersLoading || (this.volunteersLoaded && !force)) {
+        return
+      }
+
+      this.volunteersLoading = true
+      this.volunteersError = null
+
+      try {
+        this.volunteers = await volunteerService.list()
+        this.volunteersLoaded = true
+        this.sortVolunteers()
+      } catch (error) {
+        this.volunteersError = error instanceof Error ? error.message : 'Failed to load volunteers'
+        throw error
+      } finally {
+        this.volunteersLoading = false
+      }
+    },
+
+    async createVolunteer(payload: VolunteerPayload) {
+      this.volunteersError = null
+
+      try {
+        const createdVolunteer = await volunteerService.create(payload)
+        this.volunteers.push(createdVolunteer)
+        this.sortVolunteers()
+        return createdVolunteer
+      } catch (error) {
+        this.volunteersError = error instanceof Error ? error.message : 'Failed to create volunteer'
+        throw error
+      }
+    },
+
+    async updateVolunteer(id: string, payload: VolunteerPayload) {
+      this.volunteersError = null
+
+      try {
+        const updatedVolunteer = await volunteerService.update(id, payload)
+        const index = this.volunteers.findIndex((volunteer) => volunteer.id === id)
+
+        if (index >= 0) {
+          this.volunteers[index] = updatedVolunteer
+        } else {
+          this.volunteers.push(updatedVolunteer)
+        }
+
+        this.sortVolunteers()
+        return updatedVolunteer
+      } catch (error) {
+        this.volunteersError = error instanceof Error ? error.message : 'Failed to update volunteer'
+        throw error
+      }
+    },
+
+    async deleteVolunteer(id: string) {
+      this.volunteersError = null
+
+      try {
+        await volunteerService.remove(id)
+        this.volunteers = this.volunteers.filter((volunteer) => volunteer.id !== id)
+      } catch (error) {
+        this.volunteersError = error instanceof Error ? error.message : 'Failed to delete volunteer'
+        throw error
+      }
+    },
+
     addDonation(donation: Omit<Donation, 'id'>) {
       const newId = Math.max(...this.donations.map((item) => item.id)) + 1
       this.donations.push({ ...donation, id: newId })
@@ -214,6 +295,10 @@ export const useChurchStore = defineStore('church', {
 
     sortEvents() {
       this.events = [...this.events].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+    },
+
+    sortVolunteers() {
+      this.volunteers = [...this.volunteers].sort((a, b) => a.name.localeCompare(b.name))
     }
   }
 })

@@ -23,13 +23,26 @@ class Event
             event_time VARCHAR(50) NOT NULL,
             location VARCHAR(150) NOT NULL,
             description TEXT NOT NULL,
-            attendees INT NOT NULL DEFAULT 0,
+            volunteers VARCHAR(50) NOT NULL DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_event_date (event_date)
         )";
 
         $this->db->query($sql);
+
+        $this->migrateAttendeesToVolunteers();
+    }
+
+    private function migrateAttendeesToVolunteers(): void
+    {
+        $checkSql = "SHOW COLUMNS FROM events LIKE 'attendees'";
+        $result = $this->db->fetch($checkSql);
+
+        if ($result) {
+            $alterSql = "ALTER TABLE events CHANGE COLUMN attendees volunteers VARCHAR(50) NOT NULL DEFAULT ''";
+            $this->db->query($alterSql);
+        }
     }
 
     public function create(array $data): int
@@ -46,7 +59,7 @@ class Event
             event_time AS time,
             location,
             description,
-            attendees,
+            volunteers,
             created_at,
             updated_at
         FROM events
@@ -64,7 +77,7 @@ class Event
             event_time AS time,
             location,
             description,
-            attendees,
+            volunteers,
             created_at,
             updated_at
         FROM events

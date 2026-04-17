@@ -91,7 +91,7 @@ class EventController
 
     private function validateEventPayload(array $payload, bool $isPartial): ?string
     {
-        $requiredFields = ['title', 'date', 'time', 'location', 'description'];
+        $requiredFields = ['title', 'date', 'time', 'location', 'description', 'volunteers'];
 
         if (!$isPartial) {
             foreach ($requiredFields as $field) {
@@ -105,12 +105,6 @@ class EventController
             return 'Date must use YYYY-MM-DD format';
         }
 
-        if (isset($payload['attendees'])) {
-            if (!is_numeric($payload['attendees']) || (int)$payload['attendees'] < 0) {
-                return 'Attendees must be a non-negative number';
-            }
-        }
-
         return null;
     }
 
@@ -122,7 +116,7 @@ class EventController
             'time' => 'event_time',
             'location' => 'location',
             'description' => 'description',
-            'attendees' => 'attendees'
+            'volunteers' => 'volunteers'
         ];
 
         $mapped = [];
@@ -134,16 +128,8 @@ class EventController
 
             $value = $payload[$inputField];
 
-            if (!$isPartial && $inputField === 'attendees' && ($value === null || $value === '')) {
-                $value = 0;
-            }
-
             if (is_string($value)) {
                 $value = trim($value);
-            }
-
-            if ($inputField === 'attendees') {
-                $value = (int)$value;
             }
 
             $mapped[$databaseField] = $value;

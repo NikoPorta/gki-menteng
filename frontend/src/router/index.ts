@@ -6,6 +6,7 @@ import Events from '../views/Events.vue'
 import Donations from '../views/Donations.vue'
 import Reports from '../views/Reports.vue'
 import Auth from '../views/Auth.vue'
+import Volunteers from '../views/Volunteers.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,6 +40,11 @@ const router = createRouter({
       path: '/reports',
       name: 'reports',
       component: Reports
+    },
+    {
+      path: '/volunteers',
+      name: 'volunteers',
+      component: Volunteers
     }
   ]
 })
