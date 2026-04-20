@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useChurchStore } from '../stores/church'
 import { useAuthStore } from '../stores/auth'
 
@@ -103,7 +103,15 @@ const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-const addNewMember = () => {
+onMounted(async () => {
+  try {
+    await churchStore.loadMembers()
+  } catch (error) {
+    console.error('Failed to load members:', error)
+  }
+})
+
+const addNewMember = async () => {
   if (!authStore.isAuthenticated) {
     return
   }
@@ -111,28 +119,33 @@ const addNewMember = () => {
     return
   }
   const today = getTodayDate()
-  churchStore.addMember({
-    name: newMember.value.name,
-    email: newMember.value.email,
-    phone: newMember.value.phone || '',
-    role: newMember.value.role || '',
-    status: newMember.value.status || 'active',
-    joinDate: today
-  })
-  // Close modal and reset form
-  const modal = document.getElementById('addMemberModal')
-  if (modal) {
-    // @ts-ignore
-    const bsModal = bootstrap.Modal.getInstance(modal)
-    bsModal.hide()
-  }
-  newMember.value = {
-    name: '',
-    email: '',
-    phone: '',
-    role: '',
-    status: 'active',
-    joinDate: getTodayDate()
+  try {
+    await churchStore.addMember({
+      name: newMember.value.name,
+      email: newMember.value.email,
+      phone: newMember.value.phone || '',
+      role: newMember.value.role || '',
+      status: newMember.value.status || 'active',
+      joinDate: today
+    })
+
+    const modal = document.getElementById('addMemberModal')
+    if (modal) {
+      // @ts-ignore
+      const bsModal = bootstrap.Modal.getInstance(modal)
+      bsModal?.hide()
+    }
+
+    newMember.value = {
+      name: '',
+      email: '',
+      phone: '',
+      role: '',
+      status: 'active',
+      joinDate: getTodayDate()
+    }
+  } catch (error) {
+    console.error('Failed to create member:', error)
   }
 }
 </script>

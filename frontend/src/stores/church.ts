@@ -5,16 +5,9 @@ import {
   type VolunteerPayload,
   type VolunteerRecord
 } from '@/services/volunteerService'
+import { memberService, type MemberPayload, type MemberRecord } from '@/services/memberService'
 
-export interface Member {
-  id: number
-  name: string
-  email: string
-  phone: string
-  joinDate: string
-  status: 'active' | 'inactive'
-  role: string
-}
+export interface Member extends MemberRecord {}
 
 export interface Event extends EventRecord {}
 export interface Volunteer extends VolunteerRecord {}
@@ -32,6 +25,9 @@ interface ChurchState {
   events: Event[]
   volunteers: Volunteer[]
   donations: Donation[]
+  membersLoading: boolean
+  membersLoaded: boolean
+  membersError: string | null
   eventsLoading: boolean
   eventsLoaded: boolean
   eventsError: string | null
@@ -42,53 +38,7 @@ interface ChurchState {
 
 export const useChurchStore = defineStore('church', {
   state: (): ChurchState => ({
-    members: [
-      {
-        id: 1,
-        name: 'Rev. Dr. Michael Johnson',
-        email: 'pastor.michael@church.org',
-        phone: '+1 (555) 123-4567',
-        joinDate: '2020-01-15',
-        status: 'active',
-        role: 'Lead Pastor'
-      },
-      {
-        id: 2,
-        name: 'Sarah Williams',
-        email: 'sarah.williams@church.org',
-        phone: '+1 (555) 234-5678',
-        joinDate: '2021-03-20',
-        status: 'active',
-        role: 'Worship Leader'
-      },
-      {
-        id: 3,
-        name: 'David Thompson',
-        email: 'david.thompson@church.org',
-        phone: '+1 (555) 345-6789',
-        joinDate: '2019-06-10',
-        status: 'active',
-        role: 'Elder'
-      },
-      {
-        id: 4,
-        name: 'Emily Rodriguez',
-        email: 'emily.rodriguez@church.org',
-        phone: '+1 (555) 456-7890',
-        joinDate: '2022-01-05',
-        status: 'inactive',
-        role: 'Volunteer'
-      },
-      {
-        id: 5,
-        name: 'James Anderson',
-        email: 'james.anderson@church.org',
-        phone: '+1 (555) 567-8901',
-        joinDate: '2018-11-12',
-        status: 'active',
-        role: 'Deacon'
-      }
-    ],
+    members: [],
     events: [],
     volunteers: [],
     donations: [
@@ -128,6 +78,9 @@ export const useChurchStore = defineStore('church', {
         purpose: 'Building Fund'
       }
     ],
+    membersLoading: false,
+    membersLoaded: false,
+    membersError: null,
     eventsLoading: false,
     eventsLoaded: false,
     eventsError: null,
@@ -150,9 +103,70 @@ export const useChurchStore = defineStore('church', {
   },
 
   actions: {
-    addMember(member: Omit<Member, 'id'>) {
-      const newId = Math.max(...this.members.map((item) => item.id)) + 1
-      this.members.push({ ...member, id: newId })
+    async loadMembers(force = false) {
+      if (this.membersLoading || (this.membersLoaded && !force)) {
+        return
+      }
+
+      this.membersLoading = true
+      this.membersError = null
+
+      try {
+        this.members = await memberService.list()
+        this.membersLoaded = true
+      } catch (error) {
+        this.membersError = error instanceof Error ? error.message : 'Failed to load members'
+        throw error
+      } finally {
+        this.membersLoading = false
+      }
+    },
+
+    async addMember(member: MemberPayload) {
+      this.membersError = null
+
+      try {
+        const createdMember = await memberService.create(member)
+        this.members.push(createdMember)
+        this.sortMembers()
+        return createdMember
+      } catch (error) {
+        this.membersError = error instanceof Error ? error.message : 'Failed to create member'
+        throw error
+      }
+    },
+
+    async updateMember(id: string, payload: MemberPayload) {
+      this.membersError = null
+
+      try {
+        const updatedMember = await memberService.update(id, payload)
+        const index = this.members.findIndex((member) => member.id === id)
+
+        if (index >= 0) {
+          this.members[index] = updatedMember
+        } else {
+          this.members.push(updatedMember)
+        }
+
+        this.sortMembers()
+        return updatedMember
+      } catch (error) {
+        this.membersError = error instanceof Error ? error.message : 'Failed to update member'
+        throw error
+      }
+    },
+
+    async deleteMember(id: string) {
+      this.membersError = null
+
+      try {
+        await memberService.remove(id)
+        this.members = this.members.filter((member) => member.id !== id)
+      } catch (error) {
+        this.membersError = error instanceof Error ? error.message : 'Failed to delete member'
+        throw error
+      }
     },
 
     async loadEvents(force = false) {
@@ -299,6 +313,10 @@ export const useChurchStore = defineStore('church', {
 
     sortVolunteers() {
       this.volunteers = [...this.volunteers].sort((a, b) => a.name.localeCompare(b.name))
+    },
+
+    sortMembers() {
+      this.members = [...this.members].sort((a, b) => a.name.localeCompare(b.name))
     }
   }
 })
