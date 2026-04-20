@@ -2,7 +2,7 @@
   <div class="p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Church Members</h2>
-      <button class="luxury-btn" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+      <button v-if="authStore.isAuthenticated" class="luxury-btn" data-bs-toggle="modal" data-bs-target="#addMemberModal">
         <i class="bi bi-person-plus-fill me-2"></i>Add Member
       </button>
     </div>
@@ -83,8 +83,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useChurchStore } from '../stores/church'
+import { useAuthStore } from '../stores/auth'
 
 const churchStore = useChurchStore()
+const authStore = useAuthStore()
 
 const getTodayDate = (): string => new Date().toISOString().split('T')[0] ?? ''
 
@@ -102,6 +104,9 @@ const formatDate = (date: string) => {
 }
 
 const addNewMember = () => {
+  if (!authStore.isAuthenticated) {
+    return
+  }
   if (!newMember.value.name || !newMember.value.email) {
     return
   }

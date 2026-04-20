@@ -91,7 +91,7 @@ class VolunteerController
 
     private function validateVolunteerPayload(array $payload, bool $isPartial): ?string
     {
-        $requiredFields = ['name', 'service', 'contact'];
+        $requiredFields = ['name', 'contact'];
 
         if (!$isPartial) {
             foreach ($requiredFields as $field) {
@@ -101,15 +101,23 @@ class VolunteerController
             }
         }
 
-        if (isset($payload['service']) && !in_array($payload['service'], Volunteer::SERVICES, true)) {
-            return 'Service must be one of: ' . implode(', ', Volunteer::SERVICES);
+        if (isset($payload['services'])) {
+            if (!is_array($payload['services'])) {
+                return 'Services must be an array';
+            }
+            foreach ($payload['services'] as $service) {
+                if (!in_array($service, Volunteer::SERVICES, true)) {
+                    return 'Service must be one of: ' . implode(', ', Volunteer::SERVICES);
+                }
+            }
         }
 
         if (array_key_exists('skills', $payload) && !is_array($payload['skills'])) {
             return 'Skills must be an array';
         }
 
-        if (($payload['service'] ?? null) === 'Worship Committee' && array_key_exists('skills', $payload) && !empty($payload['skills'])) {
+        $hasWorshipCommittee = isset($payload['services']) && in_array('Worship Committee', $payload['services'], true);
+        if ($hasWorshipCommittee && array_key_exists('skills', $payload) && !empty($payload['skills'])) {
             return 'Worship Committee does not use skills';
         }
 
@@ -124,8 +132,10 @@ class VolunteerController
             $mapped['name'] = trim((string)$payload['name']);
         }
 
-        if (array_key_exists('service', $payload)) {
-            $mapped['service'] = trim((string)$payload['service']);
+        if (array_key_exists('services', $payload)) {
+            $mapped['services'] = $this->encodeServices($payload['services']);
+        } elseif (!$isPartial) {
+            $mapped['services'] = json_encode(['Musician']);
         }
 
         if (array_key_exists('contact', $payload)) {
@@ -133,21 +143,36 @@ class VolunteerController
         }
 
         if (array_key_exists('skills', $payload)) {
-            $mapped['skills'] = $this->encodeSkills($payload['service'] ?? null, $payload['skills']);
-        } elseif (!$isPartial && ($payload['service'] ?? null) !== null) {
-            $mapped['skills'] = $this->encodeSkills($payload['service'], []);
+            $mapped['skills'] = $this->encodeSkills($payload['services'] ?? null, $payload['skills']);
+        } elseif (!$isPartial) {
+            $mapped['skills'] = $this->encodeSkills($payload['services'] ?? ['Musician'], []);
         }
 
-        if (($payload['service'] ?? null) === 'Worship Committee') {
+        $hasWorshipCommittee = isset($payload['services']) && in_array('Worship Committee', $payload['services'], true);
+        if ($hasWorshipCommittee) {
             $mapped['skills'] = json_encode([]);
         }
 
         return $mapped;
     }
 
-    private function encodeSkills(?string $service, mixed $skills): string
+    private function encodeServices(mixed $services): string
     {
-        if ($service === 'Worship Committee') {
+        if (!is_array($services) || empty($services)) {
+            return json_encode(['Musician']);
+        }
+
+        $normalized = array_values(array_filter(array_map(static function ($service) {
+            return is_string($service) ? trim($service) : null;
+        }, $services)));
+
+        return json_encode(empty($normalized) ? ['Musician'] : $normalized);
+    }
+
+    private function encodeSkills(?array $services, mixed $skills): string
+    {
+        $hasWorshipCommittee = is_array($services) && in_array('Worship Committee', $services, true);
+        if ($hasWorshipCommittee) {
             return json_encode([]);
         }
 

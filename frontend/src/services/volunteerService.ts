@@ -19,14 +19,14 @@ export type VolunteerServiceName =
 export interface VolunteerRecord {
   id: string
   name: string
-  service: VolunteerServiceName
+  services: VolunteerServiceName[]
   skills: string[]
   contact: string
 }
 
 export interface VolunteerPayload {
   name: string
-  service: VolunteerServiceName
+  services: VolunteerServiceName[]
   skills: string[]
   contact: string
 }
@@ -37,17 +37,32 @@ const VOLUNTEERS_COLLECTION = 'volunteers'
 
 const normalizeVolunteer = (
   volunteer: Partial<VolunteerRecord> & { id: string | number }
-): VolunteerRecord => ({
-  id: String(volunteer.id),
-  name: volunteer.name ?? '',
-  service: (volunteer.service ?? 'Musician') as VolunteerServiceName,
-  skills: Array.isArray(volunteer.skills)
-    ? volunteer.skills
-      .map((skill) => String(skill).trim())
-      .filter(Boolean)
-    : [],
-  contact: volunteer.contact ?? ''
-})
+): VolunteerRecord => {
+  let services: VolunteerServiceName[]
+  const validServices: VolunteerServiceName[] = ['Musician', 'Soundman', 'Multimedia', 'Streaming', 'Worship Committee']
+  
+  if (Array.isArray(volunteer.services)) {
+    const mapped = volunteer.services.map((s) => String(s).trim())
+    services = mapped.filter((s): s is VolunteerServiceName => 
+      s.length > 0 && validServices.includes(s as VolunteerServiceName)
+    )
+    if (services.length === 0) services = ['Musician']
+  } else {
+    services = ['Musician']
+  }
+
+  return {
+    id: String(volunteer.id),
+    name: volunteer.name ?? '',
+    services,
+    skills: Array.isArray(volunteer.skills)
+      ? volunteer.skills
+        .map((skill) => String(skill).trim())
+        .filter(Boolean)
+      : [],
+    contact: volunteer.contact ?? ''
+  }
+}
 
 const sortVolunteers = (volunteers: VolunteerRecord[]) => {
   return [...volunteers].sort((a, b) => a.name.localeCompare(b.name))
@@ -122,8 +137,8 @@ export const volunteerService = {
         const db = getFirestoreInstance()
         await updateDoc(doc(db, VOLUNTEERS_COLLECTION, id), {
           name: payload.name,
-          service: payload.service,
-          skills: payload.service === 'Worship Committee' ? [] : payload.skills,
+          services: payload.services,
+          skills: payload.services.includes('Worship Committee') ? [] : payload.skills,
           contact: payload.contact
         })
         return normalizeVolunteer({ id, ...payload })

@@ -322,9 +322,11 @@ const volunteersByType = computed(() => {
     'Streaming': []
   }
   churchStore.volunteers.forEach((vol) => {
-    if (vol.service) {
-      const arr = grouped[vol.service]
-      if (arr) arr.push(vol)
+    if (vol.services) {
+      vol.services.forEach((svc) => {
+        const arr = grouped[svc as keyof typeof grouped]
+        if (arr) arr.push(vol)
+      })
     }
   })
   return grouped

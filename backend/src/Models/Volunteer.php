@@ -25,17 +25,14 @@ class Volunteer
 
     private function createTable(): void
     {
-        $serviceEnum = implode("', '", self::SERVICES);
-
         $sql = "CREATE TABLE IF NOT EXISTS volunteers (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(150) NOT NULL,
-            service ENUM('{$serviceEnum}') NOT NULL,
+            services JSON NOT NULL,
             skills TEXT NULL,
             contact VARCHAR(50) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_service (service),
             INDEX idx_name (name)
         )";
 
@@ -54,31 +51,31 @@ class Volunteer
         $defaults = [
             [
                 'name' => 'Abednego',
-                'service' => 'Musician',
+                'services' => json_encode(['Musician']),
                 'skills' => json_encode(['Piano', 'Sound System', 'Streaming', 'Multimedia']),
                 'contact' => '+62839482'
             ],
             [
                 'name' => 'Ruth Natalia',
-                'service' => 'Streaming',
+                'services' => json_encode(['Streaming', 'Multimedia']),
                 'skills' => json_encode(['OBS Operation', 'Camera Direction', 'YouTube Live']),
                 'contact' => '+628112223344'
             ],
             [
                 'name' => 'Jonathan',
-                'service' => 'Worship Committee',
+                'services' => json_encode(['Worship Committee']),
                 'skills' => json_encode([]),
                 'contact' => '+628778889900'
             ],
             [
                 'name' => 'Debora',
-                'service' => 'Multimedia',
+                'services' => json_encode(['Multimedia']),
                 'skills' => json_encode(['Song Lyrics', 'Presentation Slides', 'Visual Cueing']),
                 'contact' => '+628223344556'
             ],
             [
                 'name' => 'Samuel',
-                'service' => 'Soundman',
+                'services' => json_encode(['Soundman', 'Musician']),
                 'skills' => json_encode(['Mixer Setup', 'Microphone Balancing', 'Stage Monitoring']),
                 'contact' => '+628556677889'
             ]
@@ -99,7 +96,7 @@ class Volunteer
         $sql = "SELECT
             id,
             name,
-            service,
+            services,
             skills,
             contact,
             created_at,
@@ -117,7 +114,7 @@ class Volunteer
         $sql = "SELECT
             id,
             name,
-            service,
+            services,
             skills,
             contact,
             created_at,
@@ -146,12 +143,29 @@ class Volunteer
         return [
             'id' => (int)$volunteer['id'],
             'name' => $volunteer['name'] ?? '',
-            'service' => $volunteer['service'] ?? '',
+            'services' => $this->decodeServices($volunteer['services'] ?? null),
             'skills' => $this->decodeSkills($volunteer['skills'] ?? null),
             'contact' => $volunteer['contact'] ?? '',
             'created_at' => $volunteer['created_at'] ?? null,
             'updated_at' => $volunteer['updated_at'] ?? null
         ];
+    }
+
+    private function decodeServices(?string $services): array
+    {
+        if ($services === null || trim($services) === '') {
+            return ['Musician'];
+        }
+
+        $decoded = json_decode($services, true);
+
+        if (!is_array($decoded) || empty($decoded)) {
+            return ['Musician'];
+        }
+
+        return array_values(array_filter(array_map(static function ($service) {
+            return is_string($service) ? trim($service) : null;
+        }, $decoded)));
     }
 
     private function decodeSkills(?string $skills): array

@@ -23,14 +23,14 @@
         <i class="bi bi-mic-fill me-2"></i>
         <span class="nav-text">Volunteers</span>
       </router-link>
-      <router-link to="/donations" class="nav-link mb-2">
+      <!-- <router-link to="/donations" class="nav-link mb-2">
         <i class="bi bi-gift-fill me-2"></i>
         <span class="nav-text">Donations</span>
-      </router-link>
-      <router-link to="/reports" class="nav-link mb-2">
+      </router-link> -->
+      <!-- <router-link to="/reports" class="nav-link mb-2">
         <i class="bi bi-graph-up me-2"></i>
         <span class="nav-text">Reports</span>
-      </router-link>
+      </router-link> -->
     </nav>
     
     <div class="mt-auto pt-5">

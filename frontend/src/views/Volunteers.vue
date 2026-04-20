@@ -101,10 +101,34 @@
               <div>
                 <p class="section-kicker mb-1">Volunteer</p>
                 <h4 class="mb-1">{{ volunteer.name }}</h4>
-                <span class="service-badge">{{ volunteer.service }}</span>
+                <div class="d-flex flex-wrap gap-2">
+                  <span v-for="service in volunteer.services" :key="service" class="service-badge">
+                    {{ service }}
+                  </span>
+                </div>
               </div>
-              <div class="avatar-badge">
-                {{ volunteer.name.charAt(0) }}
+              <div class="d-flex align-items-start gap-2">
+                <div class="avatar-badge">
+                  {{ volunteer.name.charAt(0) }}
+                </div>
+                <div v-if="canManageVolunteers" class="volunteer-actions">
+                  <button 
+                    class="btn btn-sm btn-outline-secondary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editVolunteerModal"
+                    @click="openEditModal(volunteer)"
+                    title="Edit volunteer"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button 
+                    class="btn btn-sm btn-outline-danger"
+                    @click="confirmDelete(volunteer)"
+                    title="Delete volunteer"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -161,12 +185,21 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label">Service</label>
-                <select v-model="newVolunteer.service" class="form-select" required>
-                  <option v-for="service in services" :key="service" :value="service">
-                    {{ service }}
-                  </option>
-                </select>
+                <label class="form-label">Services</label>
+                <div class="service-checkbox-grid">
+                  <div v-for="service in services" :key="service" class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      :id="`service-${service}`"
+                      :value="service"
+                      v-model="newVolunteer.selectedServices"
+                    >
+                    <label class="form-check-label" :for="`service-${service}`">
+                      {{ service }}
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div v-if="showSkillsField" class="mb-3">
@@ -198,6 +231,71 @@
         </div>
       </div>
     </div>
+
+    <div class="modal fade" id="editVolunteerModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content volunteer-modal">
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <p class="section-kicker mb-1">Sunday Service Team</p>
+              <h5 class="modal-title">Edit Volunteer</h5>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body pt-3">
+            <form @submit.prevent="updateVolunteer">
+              <div class="mb-3">
+                <label class="form-label">Name</label>
+                <input v-model="editingForm.name" type="text" class="form-control" required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Services</label>
+                <div class="service-checkbox-grid">
+                  <div v-for="service in services" :key="service" class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      :id="`edit-service-${service}`"
+                      :value="service"
+                      v-model="editingForm.selectedServices"
+                    >
+                    <label class="form-check-label" :for="`edit-service-${service}`">
+                      {{ service }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="showSkillsField" class="mb-3">
+                <label class="form-label">Skills</label>
+                <input
+                  v-model="editingForm.skillsInput"
+                  type="text"
+                  class="form-control"
+                  placeholder="Piano, Sound System, Streaming"
+                >
+                <small class="text-muted">Separate each skill with a comma.</small>
+              </div>
+
+              <div v-else class="committee-note mb-3">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                Worship Committee does not need a skills field.
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label">Contact</label>
+                <input v-model="editingForm.contact" type="text" class="form-control" required>
+              </div>
+
+              <button type="submit" class="luxury-btn w-100" :disabled="submitting">
+                {{ submitting ? 'Saving...' : 'Update Volunteer' }}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -205,7 +303,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useChurchStore } from '@/stores/church'
 import { useAuthStore } from '@/stores/auth'
-import type { VolunteerServiceName } from '@/services/volunteerService'
+import type { VolunteerRecord, VolunteerServiceName } from '@/services/volunteerService'
 
 const churchStore = useChurchStore()
 const authStore = useAuthStore()
@@ -217,36 +315,110 @@ const submitting = ref(false)
 
 const newVolunteer = reactive<{
   name: string
-  service: VolunteerServiceName
+  selectedServices: VolunteerServiceName[]
   skillsInput: string
   contact: string
 }>({
   name: '',
-  service: 'Musician',
+  selectedServices: ['Musician'],
   skillsInput: '',
   contact: ''
 })
 
-const showSkillsField = computed(() => newVolunteer.service !== 'Worship Committee')
+const editingVolunteer = ref<VolunteerRecord | null>(null)
+const editingForm = reactive<{
+  name: string
+  selectedServices: VolunteerServiceName[]
+  skillsInput: string
+  contact: string
+}>({
+  name: '',
+  selectedServices: ['Musician'],
+  skillsInput: '',
+  contact: ''
+})
+
+const showSkillsField = computed(() => !editingForm.selectedServices.includes('Worship Committee'))
 const volunteers = computed(() => churchStore.volunteers)
 const loadingVolunteers = computed(() => churchStore.volunteersLoading)
 const volunteersError = computed(() => churchStore.volunteersError)
 const canManageVolunteers = computed(() => authStore.isAuthenticated)
 
-watch(() => newVolunteer.service, (service) => {
-  if (service === 'Worship Committee') {
-    newVolunteer.skillsInput = ''
+watch(() => editingForm.selectedServices, (services) => {
+  if (services.includes('Worship Committee')) {
+    editingForm.skillsInput = ''
   }
 })
+
+const openEditModal = (volunteer: VolunteerRecord) => {
+  editingVolunteer.value = volunteer
+  editingForm.name = volunteer.name
+  editingForm.selectedServices = [...volunteer.services]
+  editingForm.skillsInput = volunteer.skills.join(', ')
+  editingForm.contact = volunteer.contact
+}
+
+const updateVolunteer = async () => {
+  if (!editingVolunteer.value) return
+
+  const hasWorshipCommittee = editingForm.selectedServices.includes('Worship Committee')
+  const skills = hasWorshipCommittee
+    ? []
+    : editingForm.skillsInput
+      .split(',')
+      .map((skill) => skill.trim())
+      .filter(Boolean)
+
+  submitting.value = true
+
+  try {
+    await churchStore.updateVolunteer(editingVolunteer.value.id, {
+      name: editingForm.name.trim(),
+      services: editingForm.selectedServices,
+      skills,
+      contact: editingForm.contact.trim()
+    })
+  } catch {
+    return
+  } finally {
+    submitting.value = false
+  }
+
+  const modal = document.getElementById('editVolunteerModal')
+  if (modal) {
+    modal.classList.remove('show')
+    modal.style.display = 'none'
+    const backdrop = document.querySelector('.modal-backdrop')
+    backdrop?.remove()
+    document.body.classList.remove('modal-open')
+    document.body.style.removeProperty('overflow')
+    document.body.style.removeProperty('padding-right')
+  }
+
+  editingVolunteer.value = null
+  resetForm()
+}
+
+const confirmDelete = async (volunteer: VolunteerRecord) => {
+  if (!confirm(`Are you sure you want to delete ${volunteer.name}?`)) {
+    return
+  }
+
+  try {
+    await churchStore.deleteVolunteer(volunteer.id)
+  } catch {
+    // Error is handled by the store
+  }
+}
 
 const filteredVolunteers = computed(() => {
   const keyword = searchQuery.value.trim().toLowerCase()
 
   return volunteers.value.filter((volunteer) => {
-    const matchesService = selectedService.value === 'All' || volunteer.service === selectedService.value
+    const matchesService = selectedService.value === 'All' || volunteer.services.includes(selectedService.value)
     const matchesQuery = !keyword
       || volunteer.name.toLowerCase().includes(keyword)
-      || volunteer.service.toLowerCase().includes(keyword)
+      || volunteer.services.some((s) => s.toLowerCase().includes(keyword))
       || volunteer.skills.some((skill) => skill.toLowerCase().includes(keyword))
 
     return matchesService && matchesQuery
@@ -256,7 +428,7 @@ const filteredVolunteers = computed(() => {
 const serviceStats = computed(() => {
   return services.map((service) => ({
     name: service,
-    count: volunteers.value.filter((volunteer) => volunteer.service === service).length
+    count: volunteers.value.filter((volunteer) => volunteer.services.includes(service)).length
   }))
 })
 
@@ -266,13 +438,14 @@ const activeServices = computed(() => {
 
 const resetForm = () => {
   newVolunteer.name = ''
-  newVolunteer.service = 'Musician'
+  newVolunteer.selectedServices = ['Musician']
   newVolunteer.skillsInput = ''
   newVolunteer.contact = ''
 }
 
 const addVolunteer = async () => {
-  const skills = newVolunteer.service === 'Worship Committee'
+  const hasWorshipCommittee = newVolunteer.selectedServices.includes('Worship Committee')
+  const skills = hasWorshipCommittee
     ? []
     : newVolunteer.skillsInput
       .split(',')
@@ -284,7 +457,7 @@ const addVolunteer = async () => {
   try {
     await churchStore.createVolunteer({
       name: newVolunteer.name.trim(),
-      service: newVolunteer.service,
+      services: newVolunteer.selectedServices,
       skills,
       contact: newVolunteer.contact.trim()
     })
@@ -468,6 +641,39 @@ onMounted(async () => {
 
 .volunteer-empty {
   min-height: 260px;
+}
+
+.volunteer-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.volunteer-actions .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.service-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+
+.service-checkbox-grid .form-check {
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(155, 123, 69, 0.15);
+}
+
+.service-checkbox-grid .form-check-input:checked {
+  background-color: #d4af37;
+  border-color: #d4af37;
+}
+
+.service-checkbox-grid .form-check-label {
+  color: #5f4a28;
+  font-weight: 500;
 }
 
 @media (max-width: 767.98px) {
