@@ -320,7 +320,7 @@ const newVolunteer = reactive<{
   contact: string
 }>({
   name: '',
-  selectedServices: ['Musician'],
+  selectedServices: [],
   skillsInput: '',
   contact: ''
 })
@@ -438,7 +438,7 @@ const activeServices = computed(() => {
 
 const resetForm = () => {
   newVolunteer.name = ''
-  newVolunteer.selectedServices = ['Musician']
+  newVolunteer.selectedServices = []
   newVolunteer.skillsInput = ''
   newVolunteer.contact = ''
 }
@@ -660,10 +660,19 @@ onMounted(async () => {
 }
 
 .service-checkbox-grid .form-check {
+  display: flex;
+  align-items: center;
   padding: 0.5rem;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid rgba(155, 123, 69, 0.15);
+  margin-bottom: 0;
+}
+
+.service-checkbox-grid .form-check-input {
+  margin-left: 0;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
 }
 
 .service-checkbox-grid .form-check-input:checked {
