@@ -92,9 +92,13 @@ export const useChurchStore = defineStore('church', {
   getters: {
     totalMembers: (state) => state.members.length,
     activeMembers: (state) => state.members.filter((member) => member.status === 'active').length,
-    upcomingEvents: (state) => [...state.events]
-      .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
-      .slice(0, 3),
+    upcomingEvents: (state) => {
+      const today = new Date().toLocaleDateString('en-CA')
+      return [...state.events]
+        .filter((event) => event.date >= today)
+        .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+        .slice(0, 3)
+    },
     totalDonations: (state) => state.donations.reduce((sum, donation) => sum + donation.amount, 0),
     buildingFundTotal: (state) => state.donations
       .filter((donation) => donation.purpose === 'Building Fund')
