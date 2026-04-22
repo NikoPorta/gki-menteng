@@ -23,6 +23,14 @@
         <i class="bi bi-mic-fill me-2"></i>
         <span class="nav-text">Volunteers</span>
       </router-link>
+      <router-link to="/bible" class="nav-link mb-2">
+        <i class="bi bi-book-fill me-2"></i>
+        <span class="nav-text">Bible Library</span>
+      </router-link>
+      <router-link to="/bible-preview" class="nav-link mb-2">
+        <i class="bi bi-journal-bookmark-fill me-2"></i>
+        <span class="nav-text">Bible Preview</span>
+      </router-link>
       <!-- <router-link to="/donations" class="nav-link mb-2">
         <i class="bi bi-gift-fill me-2"></i>
         <span class="nav-text">Donations</span>

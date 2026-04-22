@@ -26,6 +26,7 @@ use App\Controllers\EventController;
 use App\Controllers\UserController;
 use App\Controllers\VolunteerController;
 use App\Controllers\MemberController;
+use App\Controllers\BibleController;
 
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
@@ -68,6 +69,8 @@ $router->get('/api/volunteers', [VolunteerController::class, 'index'], []);
 $router->get('/api/volunteers/{id}', [VolunteerController::class, 'show'], []);
 $router->get('/api/members', [MemberController::class, 'index'], []);
 $router->get('/api/members/{id}', [MemberController::class, 'show'], []);
+$router->get('/api/bible', [BibleController::class, 'index'], []);
+$router->get('/api/bible/{id}', [BibleController::class, 'show'], []);
 
 // Protected routes (auth required)
 $router->get('/api/auth/profile', [AuthController::class, 'profile'], [new AuthMiddleware()]);
@@ -80,6 +83,9 @@ $router->delete('/api/volunteers/{id}', [VolunteerController::class, 'delete'], 
 $router->post('/api/members', [MemberController::class, 'store'], [new AuthMiddleware()]);
 $router->put('/api/members/{id}', [MemberController::class, 'update'], [new AuthMiddleware()]);
 $router->delete('/api/members/{id}', [MemberController::class, 'delete'], [new AuthMiddleware()]);
+$router->post('/api/bible', [BibleController::class, 'store'], [new AuthMiddleware()]);
+$router->put('/api/bible/{id}', [BibleController::class, 'update'], [new AuthMiddleware()]);
+$router->delete('/api/bible/{id}', [BibleController::class, 'delete'], [new AuthMiddleware()]);
 $router->get('/api/users', [UserController::class, 'index'], [new AuthMiddleware()]);
 $router->get('/api/users/{id}', [UserController::class, 'show'], [new AuthMiddleware()]);
 $router->put('/api/users/{id}', [UserController::class, 'update'], [new AuthMiddleware()]);

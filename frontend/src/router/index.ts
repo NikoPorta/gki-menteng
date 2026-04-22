@@ -7,6 +7,8 @@ import Donations from '../views/Donations.vue'
 import Reports from '../views/Reports.vue'
 import Auth from '../views/Auth.vue'
 import Volunteers from '../views/Volunteers.vue'
+import Bible from '../views/Bible.vue'
+import BiblePreview from '../views/BiblePreview.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -45,6 +47,16 @@ const router = createRouter({
       path: '/volunteers',
       name: 'volunteers',
       component: Volunteers
+    },
+    {
+      path: '/bible',
+      name: 'bible',
+      component: Bible
+    },
+    {
+      path: '/bible-preview',
+      name: 'bible-preview',
+      component: BiblePreview
     }
   ]
 })

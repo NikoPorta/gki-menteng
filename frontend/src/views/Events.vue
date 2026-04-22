@@ -140,7 +140,7 @@
       </div>
 
       <div class="col-xl-4">
-        <div class="church-card editor-shell p-4">
+        <div ref="editorShellRef" class="church-card editor-shell p-4">
           <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
             <div>
               <p class="calendar-caption mb-1">{{ canManageEvents ? 'Event Editor' : 'Guest Access' }}</p>
@@ -281,7 +281,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { useChurchStore, type Event, type Volunteer } from '@/stores/church'
 import { useAuthStore } from '@/stores/auth'
 import type { EventPayload } from '@/services/eventService'
@@ -297,6 +297,7 @@ const showForm = ref(false)
 const editingEventId = ref<string | null>(null)
 const submitting = ref(false)
 const formError = ref<string | null>(null)
+const editorShellRef = ref<HTMLElement | null>(null)
 
 const form = reactive<EventPayload>({
   title: '',
@@ -508,6 +509,10 @@ const openCreateForm = async () => {
   form.streaming = []
   form.hasMultimedia = false
   form.hasStreaming = false
+
+  nextTick(() => {
+    editorShellRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
 }
 
 const openEditForm = (event: Event) => {
@@ -520,6 +525,9 @@ const openEditForm = (event: Event) => {
   formError.value = null
   applyEventToForm(event)
   selectDay(event.date)
+  nextTick(() => {
+    editorShellRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
 }
 
 const closeForm = () => {

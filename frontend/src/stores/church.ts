@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
 import { eventService, type EventPayload, type EventRecord } from '@/services/eventService'
 import {
+  bibleService,
+  type BibleVerseFilters,
+  type BibleVersePayload,
+  type BibleVerseRecord
+} from '@/services/bibleService'
+import {
   volunteerService,
   type VolunteerPayload,
   type VolunteerRecord
@@ -11,6 +17,7 @@ export interface Member extends MemberRecord {}
 
 export interface Event extends EventRecord {}
 export interface Volunteer extends VolunteerRecord {}
+export interface BibleVerse extends BibleVerseRecord {}
 
 export interface Donation {
   id: number
@@ -25,6 +32,7 @@ interface ChurchState {
   events: Event[]
   volunteers: Volunteer[]
   donations: Donation[]
+  bibleVerses: BibleVerse[]
   membersLoading: boolean
   membersLoaded: boolean
   membersError: string | null
@@ -34,6 +42,10 @@ interface ChurchState {
   volunteersLoading: boolean
   volunteersLoaded: boolean
   volunteersError: string | null
+  bibleVersesLoading: boolean
+  bibleVersesLoaded: boolean
+  bibleVersesError: string | null
+  bibleVerseFilterSignature: string | null
 }
 
 export const useChurchStore = defineStore('church', {
@@ -78,6 +90,7 @@ export const useChurchStore = defineStore('church', {
         purpose: 'Building Fund'
       }
     ],
+    bibleVerses: [],
     membersLoading: false,
     membersLoaded: false,
     membersError: null,
@@ -86,7 +99,11 @@ export const useChurchStore = defineStore('church', {
     eventsError: null,
     volunteersLoading: false,
     volunteersLoaded: false,
-    volunteersError: null
+    volunteersError: null,
+    bibleVersesLoading: false,
+    bibleVersesLoaded: false,
+    bibleVersesError: null,
+    bibleVerseFilterSignature: null
   }),
 
   getters: {
@@ -103,7 +120,8 @@ export const useChurchStore = defineStore('church', {
     buildingFundTotal: (state) => state.donations
       .filter((donation) => donation.purpose === 'Building Fund')
       .reduce((sum, donation) => sum + donation.amount, 0),
-    recentDonations: (state) => state.donations.slice(0, 5)
+    recentDonations: (state) => state.donations.slice(0, 5),
+    totalBibleVerses: (state) => state.bibleVerses.length
   },
 
   actions: {
@@ -259,6 +277,76 @@ export const useChurchStore = defineStore('church', {
       }
     },
 
+    async loadBibleVerses(force = false, filters: BibleVerseFilters = {}) {
+      const signature = JSON.stringify(filters)
+
+      if (this.bibleVersesLoading || (this.bibleVersesLoaded && !force && this.bibleVerseFilterSignature === signature)) {
+        return
+      }
+
+      this.bibleVersesLoading = true
+      this.bibleVersesError = null
+
+      try {
+        this.bibleVerses = await bibleService.list(filters)
+        this.bibleVersesLoaded = true
+        this.bibleVerseFilterSignature = signature
+        this.sortBibleVerses()
+      } catch (error) {
+        this.bibleVersesError = error instanceof Error ? error.message : 'Failed to load bible verses'
+        throw error
+      } finally {
+        this.bibleVersesLoading = false
+      }
+    },
+
+    async createBibleVerse(payload: BibleVersePayload) {
+      this.bibleVersesError = null
+
+      try {
+        const createdVerse = await bibleService.create(payload)
+        this.bibleVerses.push(createdVerse)
+        this.sortBibleVerses()
+        return createdVerse
+      } catch (error) {
+        this.bibleVersesError = error instanceof Error ? error.message : 'Failed to create bible verse'
+        throw error
+      }
+    },
+
+    async updateBibleVerse(id: string, payload: BibleVersePayload) {
+      this.bibleVersesError = null
+
+      try {
+        const updatedVerse = await bibleService.update(id, payload)
+        const index = this.bibleVerses.findIndex((verse) => verse.id === id)
+
+        if (index >= 0) {
+          this.bibleVerses[index] = updatedVerse
+        } else {
+          this.bibleVerses.push(updatedVerse)
+        }
+
+        this.sortBibleVerses()
+        return updatedVerse
+      } catch (error) {
+        this.bibleVersesError = error instanceof Error ? error.message : 'Failed to update bible verse'
+        throw error
+      }
+    },
+
+    async deleteBibleVerse(id: string) {
+      this.bibleVersesError = null
+
+      try {
+        await bibleService.remove(id)
+        this.bibleVerses = this.bibleVerses.filter((verse) => verse.id !== id)
+      } catch (error) {
+        this.bibleVersesError = error instanceof Error ? error.message : 'Failed to delete bible verse'
+        throw error
+      }
+    },
+
     async createVolunteer(payload: VolunteerPayload) {
       this.volunteersError = null
 
@@ -321,6 +409,16 @@ export const useChurchStore = defineStore('church', {
 
     sortMembers() {
       this.members = [...this.members].sort((a, b) => a.name.localeCompare(b.name))
+    },
+
+    sortBibleVerses() {
+      this.bibleVerses = [...this.bibleVerses].sort((a, b) => {
+        return a.translation.localeCompare(b.translation)
+          || a.testament.localeCompare(b.testament)
+          || a.book.localeCompare(b.book)
+          || a.chapter - b.chapter
+          || a.verse - b.verse
+      })
     }
   }
 })

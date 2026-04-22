@@ -51,3 +51,19 @@ CREATE TABLE IF NOT EXISTS events (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_event_date (event_date)
 );
+
+-- Bible verses table
+CREATE TABLE IF NOT EXISTS bible_verses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    translation VARCHAR(50) NOT NULL DEFAULT 'TB',
+    testament ENUM('Old Testament', 'New Testament') NOT NULL,
+    book_name VARCHAR(100) NOT NULL,
+    chapter_number INT NOT NULL,
+    verse_number INT NOT NULL,
+    verse_text TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_bible_reference (translation, book_name, chapter_number, verse_number),
+    INDEX idx_bible_lookup (translation, book_name, chapter_number, verse_number),
+    INDEX idx_bible_testament (testament)
+);
