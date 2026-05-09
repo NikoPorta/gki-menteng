@@ -238,8 +238,9 @@ onMounted(async () => {
   min-height: 100%;
   padding: 1.5rem;
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.65), transparent 38%),
-    linear-gradient(180deg, rgba(245, 230, 211, 0.55), rgba(232, 213, 183, 0.82));
+    radial-gradient(circle at top, rgba(212, 175, 55, 0.12), transparent 38%),
+    linear-gradient(180deg, var(--theme-bg));
+  color: var(--theme-text);
 }
 
 .reading-hero,
@@ -253,10 +254,10 @@ onMounted(async () => {
   padding: 2rem;
   margin-bottom: 1.5rem;
   background:
-    linear-gradient(135deg, rgba(68, 43, 26, 0.92), rgba(102, 68, 35, 0.94)),
+    linear-gradient(135deg, rgba(18, 14, 10, 0.9), rgba(44, 24, 16, 0.94)),
     url('/gki_menteng.jpg') center/cover;
-  color: #fbf4e7;
-  border-color: rgba(255, 240, 205, 0.15);
+  color: #f4ece0;
+  border-color: var(--theme-border);
 }
 
 .reading-hero__inner {
@@ -277,7 +278,7 @@ onMounted(async () => {
   text-transform: uppercase;
   letter-spacing: 0.22em;
   font-size: 0.78rem;
-  color: #f5d9a6;
+  color: #d4af37;
 }
 
 .display-title {
@@ -289,7 +290,7 @@ onMounted(async () => {
   max-width: 58ch;
   font-size: 1.02rem;
   line-height: 1.8;
-  color: rgba(251, 244, 231, 0.88);
+  color: rgba(244, 236, 224, 0.88);
 }
 
 .reading-hero__meta {
@@ -304,16 +305,16 @@ onMounted(async () => {
   justify-content: flex-start;
   padding: 0.8rem 1rem;
   border-radius: 999px;
-  background: rgba(255, 248, 232, 0.14);
-  border: 1px solid rgba(255, 248, 232, 0.14);
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid var(--theme-border);
   backdrop-filter: blur(12px);
   font-size: 0.9rem;
-  color: #fff7e7;
+  color: var(--theme-text);
   white-space: nowrap;
 }
 
 .meta-chip--soft {
-  background: rgba(255, 248, 232, 0.09);
+  background: rgba(212, 175, 55, 0.08);
 }
 
 .hero-glow {
@@ -328,13 +329,13 @@ onMounted(async () => {
 .hero-glow-left {
   top: -120px;
   left: -80px;
-  background: radial-gradient(circle, rgba(255, 206, 120, 0.8), transparent 65%);
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.55), transparent 65%);
 }
 
 .hero-glow-right {
   right: -80px;
   bottom: -140px;
-  background: radial-gradient(circle, rgba(255, 236, 194, 0.7), transparent 65%);
+  background: radial-gradient(circle, rgba(244, 236, 224, 0.35), transparent 65%);
 }
 
 .reading-controls {
@@ -345,7 +346,7 @@ onMounted(async () => {
 .reading-controls :deep(.form-control),
 .reading-controls :deep(.form-select) {
   border-radius: 14px;
-  border-color: rgba(155, 123, 69, 0.2);
+  border-color: var(--theme-border);
   padding: 0.8rem 0.95rem;
 }
 
@@ -363,7 +364,7 @@ onMounted(async () => {
   transform: translateX(-50%);
   border-radius: 999px;
   background: linear-gradient(180deg, #8a6433 0%, #6a4a24 50%, #8a6433 100%);
-  box-shadow: 0 0 0 1px rgba(255, 249, 236, 0.25), 0 0 24px rgba(107, 75, 36, 0.3);
+  box-shadow: 0 0 0 1px rgba(244, 236, 224, 0.18), 0 0 24px rgba(107, 75, 36, 0.3);
   z-index: 0;
 }
 
@@ -372,17 +373,18 @@ onMounted(async () => {
   z-index: 1;
   padding: 1.25rem;
   background:
-    linear-gradient(90deg, rgba(255, 252, 247, 0.98), rgba(248, 241, 229, 0.98) 50%, rgba(255, 252, 247, 0.98)),
+    linear-gradient(90deg, var(--theme-surface-strong), var(--theme-surface) 50%, var(--theme-surface-strong)),
     repeating-linear-gradient(
       0deg,
-      rgba(155, 123, 69, 0.03),
-      rgba(155, 123, 69, 0.03) 1px,
+      rgba(212, 175, 55, 0.03),
+      rgba(212, 175, 55, 0.03) 1px,
       transparent 1px,
       transparent 28px
     );
   border-radius: 28px;
-  box-shadow: 0 24px 70px rgba(73, 50, 26, 0.16);
-  border: 1px solid rgba(155, 123, 69, 0.16);
+  box-shadow: var(--theme-shadow);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text);
 }
 
 .open-book::before {
@@ -390,7 +392,7 @@ onMounted(async () => {
   position: absolute;
   inset: 1rem;
   border-radius: 22px;
-  border: 1px solid rgba(155, 123, 69, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.08);
   pointer-events: none;
 }
 
@@ -401,18 +403,18 @@ onMounted(async () => {
   gap: 1rem;
   padding: 0.5rem 0.5rem 1.1rem;
   margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(155, 123, 69, 0.14);
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .book-subtitle {
-  color: #866f52;
+  color: var(--theme-muted);
 }
 
 .book-folio {
   padding: 0.7rem 1rem;
   border-radius: 999px;
-  background: rgba(155, 123, 69, 0.1);
-  color: #6a542f;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--theme-text);
   font-size: 0.88rem;
   font-weight: 700;
   white-space: nowrap;
@@ -430,24 +432,24 @@ onMounted(async () => {
   padding: 1.25rem 1.15rem 1.4rem;
   border-radius: 24px;
   background:
-    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(250, 243, 231, 0.97)),
+    linear-gradient(180deg, var(--theme-surface-strong), var(--theme-surface)),
     repeating-linear-gradient(
       0deg,
-      rgba(155, 123, 69, 0.025),
-      rgba(155, 123, 69, 0.025) 1px,
+      rgba(212, 175, 55, 0.025),
+      rgba(212, 175, 55, 0.025) 1px,
       transparent 1px,
       transparent 31px
     );
-  border: 1px solid rgba(155, 123, 69, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--theme-border);
+  box-shadow: inset 0 0 0 1px rgba(244, 236, 224, 0.08);
 }
 
 .page--left {
-  box-shadow: inset -18px 0 26px rgba(114, 76, 33, 0.06);
+  box-shadow: inset -18px 0 26px rgba(114, 76, 33, 0.08);
 }
 
 .page--right {
-  box-shadow: inset 18px 0 26px rgba(114, 76, 33, 0.06);
+  box-shadow: inset 18px 0 26px rgba(114, 76, 33, 0.08);
 }
 
 .page-number {
@@ -460,8 +462,8 @@ onMounted(async () => {
   min-width: 2.2rem;
   height: 2.2rem;
   border-radius: 999px;
-  background: rgba(155, 123, 69, 0.12);
-  color: #6a542f;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--theme-text);
   font-weight: 700;
   font-size: 0.85rem;
 }
@@ -488,8 +490,8 @@ onMounted(async () => {
   height: 2rem;
   margin-top: 0.1rem;
   border-radius: 999px;
-  background: rgba(155, 123, 69, 0.16);
-  color: #6a542f;
+  background: rgba(212, 175, 55, 0.16);
+  color: var(--theme-text);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -498,13 +500,13 @@ onMounted(async () => {
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: #9b7b45;
+  color: #d4af37;
 }
 
 .verse-text {
   font-size: 1rem;
   line-height: 1.9;
-  color: #392d21;
+  color: var(--theme-text);
 }
 
 .book-empty {
@@ -514,9 +516,9 @@ onMounted(async () => {
   justify-content: center;
   min-height: 520px;
   text-align: center;
-  color: #7a6a52;
-  background: rgba(255, 252, 246, 0.55);
-  border: 1px dashed rgba(155, 123, 69, 0.25);
+  color: var(--theme-muted);
+  background: var(--theme-surface);
+  border: 1px dashed var(--theme-border);
   border-radius: 24px;
 }
 

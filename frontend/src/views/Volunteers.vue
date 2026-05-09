@@ -493,21 +493,22 @@ onMounted(async () => {
 <style scoped>
 .volunteers-view {
   min-height: 100%;
+  color: var(--theme-text);
 }
 
 .hero-card {
   overflow: hidden;
   position: relative;
   background:
-    radial-gradient(circle at top right, rgba(212, 175, 55, 0.18), transparent 32%),
-    linear-gradient(135deg, rgba(255, 251, 243, 0.98), rgba(245, 232, 205, 0.94));
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.14), transparent 32%),
+    linear-gradient(135deg, var(--theme-surface-strong), var(--theme-surface));
 }
 
 .section-kicker {
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.76rem;
-  color: #9b7b45;
+  color: #d4af37;
   font-weight: 700;
 }
 
@@ -523,13 +524,14 @@ onMounted(async () => {
   gap: 1rem;
   padding: 1rem 1.1rem;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(155, 123, 69, 0.14);
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text);
 }
 
 .hero-stat strong {
   font-size: 1.35rem;
-  color: #5b451f;
+  color: var(--theme-text);
 }
 
 .service-stat-card {
@@ -542,7 +544,7 @@ onMounted(async () => {
 .volunteer-modal .form-control,
 .volunteer-modal .form-select {
   border-radius: 14px;
-  border-color: rgba(155, 123, 69, 0.22);
+  border-color: var(--theme-border);
   padding: 0.8rem 0.95rem;
 }
 
@@ -551,22 +553,23 @@ onMounted(async () => {
   align-items: center;
   padding: 0.55rem 0.95rem;
   border-radius: 999px;
-  background: rgba(155, 123, 69, 0.12);
-  color: #5f4a28;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--theme-text);
   font-weight: 700;
 }
 
 .neutral-chip {
-  background: rgba(44, 24, 16, 0.08);
+  background: rgba(212, 175, 55, 0.08);
 }
 
 .volunteer-card {
-  border: 1px solid rgba(155, 123, 69, 0.16);
+  border: 1px solid var(--theme-border);
   border-radius: 24px;
   padding: 1.4rem;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 241, 225, 0.9));
-  box-shadow: 0 14px 30px rgba(58, 37, 14, 0.08);
+    linear-gradient(180deg, var(--theme-surface-strong), var(--theme-surface));
+  box-shadow: var(--theme-shadow);
+  color: var(--theme-text);
 }
 
 .service-badge {
@@ -574,8 +577,8 @@ onMounted(async () => {
   align-items: center;
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
-  background: rgba(212, 175, 55, 0.18);
-  color: #6e541e;
+  background: rgba(212, 175, 55, 0.16);
+  color: var(--theme-text);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -603,15 +606,15 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: 0.7rem;
-  color: #5d4d39;
+  color: var(--theme-text);
   font-weight: 500;
 }
 
 .skill-block {
   padding: 1rem;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.65);
-  border: 1px solid rgba(155, 123, 69, 0.12);
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
 }
 
 .skill-pill {
@@ -619,8 +622,8 @@ onMounted(async () => {
   align-items: center;
   padding: 0.4rem 0.7rem;
   border-radius: 999px;
-  background: rgba(44, 24, 16, 0.07);
-  color: #4f3b24;
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--theme-text);
   font-size: 0.82rem;
   font-weight: 600;
 }
@@ -629,14 +632,15 @@ onMounted(async () => {
 .committee-note {
   padding: 0.95rem 1rem;
   border-radius: 16px;
-  background: rgba(155, 123, 69, 0.08);
-  color: #725a31;
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--theme-text);
 }
 
 .volunteer-modal {
   border-radius: 24px;
-  border: 1px solid rgba(155, 123, 69, 0.16);
-  background: linear-gradient(180deg, #fffefb, #f7f0df);
+  border: 1px solid var(--theme-border);
+  background: linear-gradient(180deg, var(--theme-surface-strong), var(--theme-surface));
+  color: var(--theme-text);
 }
 
 .volunteer-empty {
@@ -664,8 +668,8 @@ onMounted(async () => {
   align-items: center;
   padding: 0.5rem;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(155, 123, 69, 0.15);
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
   margin-bottom: 0;
 }
 
@@ -681,7 +685,7 @@ onMounted(async () => {
 }
 
 .service-checkbox-grid .form-check-label {
-  color: #5f4a28;
+  color: var(--theme-text);
   font-weight: 500;
 }
 

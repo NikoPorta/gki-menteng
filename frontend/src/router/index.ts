@@ -65,6 +65,11 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   authStore.initAuth()
 
+  if (to.name === 'bible' && !authStore.isAuthenticated) {
+    next({ name: 'bible-preview' })
+    return
+  }
+
   next()
 })
 

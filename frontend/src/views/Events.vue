@@ -1,5 +1,5 @@
 <template>
-  <div class="events-view p-4">
+  <div ref="eventsViewRef" class="events-view p-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
       <div>
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
@@ -45,8 +45,8 @@
             <p class="mb-0">Loading events...</p>
           </div>
 
-          <template v-else>
-            <div class="calendar-grid mb-4">
+           <template v-else>
+             <div class="calendar-grid mb-4">
               <div
                 v-for="dayName in weekdayLabels"
                 :key="dayName"
@@ -76,64 +76,30 @@
                     v-for="event in day.events.slice(0, 2)"
                     :key="event.id"
                     class="calendar-pill"
+                    :title="event.time + ' - ' + event.title"
                   >
-                    {{ event.time }} - {{ event.title }}
+                    {{ event.time }} - ...
                   </span>
                   <span v-if="day.events.length > 2" class="calendar-more">
                     +{{ day.events.length - 2 }} more
                   </span>
                 </div>
-              </button>
-            </div>
+               </button>
+             </div>
 
-            <div class="selected-day-panel">
-              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                <div>
-                  <p class="calendar-caption mb-1">Selected Date</p>
-                  <h4 class="mb-0">{{ selectedDateLabel }}</h4>
-                </div>
-                <span class="event-counter">{{ selectedDayEvents.length }} event{{ selectedDayEvents.length === 1 ? '' : 's' }}</span>
-              </div>
+             <Modal
+               v-model="isDatePopupOpen"
+               :selected-date-label="selectedDateLabel"
+               :events="selectedDayEvents"
+               :can-manage-events="canManageEvents"
+               @edit="openEditForm"
+               @delete="removeEvent"
+             />
 
-              <div v-if="selectedDayEvents.length" class="row g-3">
-                <div class="col-lg-6" v-for="event in selectedDayEvents" :key="event.id">
-                  <div class="event-detail-card h-100">
-                    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-                      <div>
-                        <h5 class="mb-1">{{ event.title }}</h5>
-                        <p class="text-muted mb-0">{{ event.location }}</p>
-                      </div>
-                      <i class="bi bi-calendar-check gold-text fs-4"></i>
-                    </div>
-                    <div class="event-meta mb-3">
-                      <p><i class="bi bi-calendar-date me-2"></i>{{ event.date }}</p>
-                      <p><i class="bi bi-clock me-2"></i>{{ event.time }}</p>
-                      <div class="volunteer-display">
-                        <p class="mb-1"><i class="bi bi-people me-2"></i>Volunteers:</p>
-                        <ul class="volunteer-list mb-0">
-                          <li v-for="vol in event.volunteers.split('; ').filter(Boolean)" :key="vol">
-                            {{ vol.replace(': ', ': ') }}
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    <p class="mb-3">{{ event.description }}</p>
-                    <div v-if="canManageEvents" class="d-flex gap-2">
-                      <button class="btn btn-outline-gold flex-fill" @click="openEditForm(event)">
-                        Edit
-                      </button>
-                      <button class="btn btn-outline-danger flex-fill" :disabled="submitting" @click="removeEvent(event.id)">
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div v-else class="empty-state">
-                <i class="bi bi-calendar-x fs-2 mb-3"></i>
-                <p class="mb-0">No events scheduled for this date.</p>
-              </div>
+             <div class="selected-day-hint">
+              <p class="mb-0">
+                Click any date to open a popup with the selected date and its events.
+              </p>
             </div>
           </template>
         </div>
@@ -277,14 +243,16 @@
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useChurchStore, type Event, type Volunteer } from '@/stores/church'
 import { useAuthStore } from '@/stores/auth'
 import type { EventPayload } from '@/services/eventService'
+import Modal from '@/components/Modal.vue'
 
 const churchStore = useChurchStore()
 const authStore = useAuthStore()
@@ -298,6 +266,8 @@ const editingEventId = ref<string | null>(null)
 const submitting = ref(false)
 const formError = ref<string | null>(null)
 const editorShellRef = ref<HTMLElement | null>(null)
+const eventsViewRef = ref<HTMLElement | null>(null)
+const isDatePopupOpen = ref(false)
 
 const form = reactive<EventPayload>({
   title: '',
@@ -407,14 +377,6 @@ const selectedDayEvents = computed(() => {
   return eventsByDate.value[selectedDateKey.value] ?? []
 })
 
-const formatVolunteersForDisplay = (volunteersStr: string) => {
-  if (!volunteersStr) return 'None'
-  return volunteersStr.split('; ').map(part => {
-    const [type, name] = part.split(': ')
-    return `${type}: ${name}`
-  }).join(', ')
-}
-
 const applyEventToForm = (event?: Event) => {
   form.title = event?.title ?? ''
   form.date = event?.date ?? selectedDateKey.value
@@ -446,27 +408,32 @@ const applyEventToForm = (event?: Event) => {
 }
 
 const syncCalendarToEventData = () => {
-  if (!churchStore.events.length) {
-    displayedMonth.value = new Date(today.getFullYear(), today.getMonth(), 1)
+  const selectedDate = parseEventDate(selectedDateKey.value)
+
+  if (Number.isNaN(selectedDate.getTime())) {
     selectedDateKey.value = formatDateKey(today)
+    displayedMonth.value = new Date(today.getFullYear(), today.getMonth(), 1)
     return
   }
 
-  const selectedHasEvents = churchStore.events.some((event) => event.date === selectedDateKey.value)
-
-  if (!selectedHasEvents) {
-    const firstEventDate = churchStore.events[0]?.date ?? formatDateKey(today)
-    selectedDateKey.value = firstEventDate
-    const selectedDate = parseEventDate(firstEventDate)
-    displayedMonth.value = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
-  }
+  displayedMonth.value = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
 }
 
-const selectDay = (dateKey: string) => {
+const selectDay = (dateKey: string, openPopup = true) => {
   selectedDateKey.value = dateKey
 
   const selectedDate = parseEventDate(dateKey)
   displayedMonth.value = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+
+  isDatePopupOpen.value = openPopup
+
+  if (openPopup) {
+    eventsViewRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+const closeDatePopup = () => {
+  isDatePopupOpen.value = false
 }
 
 const goToPreviousMonth = () => {
@@ -524,7 +491,8 @@ const openEditForm = (event: Event) => {
   editingEventId.value = event.id
   formError.value = null
   applyEventToForm(event)
-  selectDay(event.date)
+  selectDay(event.date, false)
+  closeDatePopup()
   nextTick(() => {
     editorShellRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   })
@@ -591,10 +559,10 @@ const submitForm = async () => {
   try {
     if (isEditing.value && editingEventId.value) {
       const updatedEvent = await churchStore.updateEvent(editingEventId.value, payload)
-      selectDay(updatedEvent.date)
+      selectDay(updatedEvent.date, false)
     } else {
       const createdEvent = await churchStore.createEvent(payload)
-      selectDay(createdEvent.date)
+      selectDay(createdEvent.date, false)
     }
 
     closeForm()
@@ -643,14 +611,26 @@ const refreshEvents = async () => {
   }
 }
 
+const handleEscapeKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && isDatePopupOpen.value) {
+    closeDatePopup()
+  }
+}
+
 onMounted(async () => {
+  window.addEventListener('keydown', handleEscapeKey)
   await refreshEvents()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleEscapeKey)
 })
 </script>
 
 <style scoped>
 .events-view {
   min-height: 100%;
+  color: var(--theme-text);
 }
 
 .source-badge {
@@ -658,8 +638,8 @@ onMounted(async () => {
   align-items: center;
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
-  background: rgba(155, 123, 69, 0.12);
-  color: #6a542f;
+  background: rgba(212, 175, 55, 0.14);
+  color: var(--theme-text);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -680,7 +660,7 @@ onMounted(async () => {
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.78rem;
-  color: #9b7b45;
+  color: #d4af37;
 }
 
 .calendar-month {
@@ -696,18 +676,21 @@ onMounted(async () => {
 .calendar-weekday {
   text-align: center;
   font-weight: 700;
-  color: #7a6a52;
+  color: var(--theme-muted);
   padding-bottom: 0.5rem;
 }
 
 .calendar-day {
-  border: 1px solid rgba(155, 123, 69, 0.18);
+  border: 1px solid var(--theme-border);
   border-radius: 20px;
-  background: linear-gradient(180deg, rgba(255, 252, 246, 0.98), rgba(247, 238, 219, 0.9));
+  background: linear-gradient(180deg, var(--theme-surface-strong), var(--theme-surface));
+  color: var(--theme-text);
   min-height: 150px;
+  max-height: 280px;
   padding: 0.9rem;
   text-align: left;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  overflow: hidden;
 }
 
 .calendar-day-header {
@@ -719,7 +702,7 @@ onMounted(async () => {
 
 .calendar-day:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(70, 49, 24, 0.08);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
 }
 
 .calendar-day.is-outside-month {
@@ -727,12 +710,12 @@ onMounted(async () => {
 }
 
 .calendar-day.has-events {
-  border-color: rgba(155, 123, 69, 0.5);
+  border-color: rgba(212, 175, 55, 0.5);
 }
 
 .calendar-day.is-selected {
-  border-color: #9b7b45;
-  box-shadow: 0 14px 28px rgba(155, 123, 69, 0.18);
+  border-color: #d4af37;
+  box-shadow: 0 14px 28px rgba(212, 175, 55, 0.18);
 }
 
 .calendar-day-number,
@@ -747,16 +730,16 @@ onMounted(async () => {
 .calendar-day-number {
   width: 2rem;
   height: 2rem;
-  color: #3d3124;
-  background: rgba(255, 255, 255, 0.85);
+  color: var(--theme-text);
+  background: rgba(212, 175, 55, 0.1);
 }
 
 .calendar-bubble {
   min-width: 1.8rem;
   height: 1.8rem;
   padding: 0 0.45rem;
-  background: #9b7b45;
-  color: #fff;
+  background: #d4af37;
+  color: #120d08;
   font-size: 0.78rem;
 }
 
@@ -771,20 +754,25 @@ onMounted(async () => {
   display: block;
   padding: 0.45rem 0.6rem;
   border-radius: 12px;
-  background: rgba(155, 123, 69, 0.12);
-  color: #4c3c2b;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--theme-text);
   font-size: 0.82rem;
   line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
 }
 
 .calendar-more {
   font-size: 0.82rem;
-  color: #7a6a52;
+  color: var(--theme-muted);
 }
 
-.selected-day-panel {
-  border-top: 1px solid rgba(155, 123, 69, 0.18);
+.selected-day-hint {
+  border-top: 1px solid var(--theme-border);
   padding-top: 1.5rem;
+  color: var(--theme-muted);
 }
 
 .event-counter {
@@ -793,16 +781,42 @@ onMounted(async () => {
   justify-content: center;
   padding: 0.5rem 0.85rem;
   border-radius: 999px;
-  background: rgba(155, 123, 69, 0.12);
-  color: #6a542f;
+  background: rgba(212, 175, 55, 0.14);
+  color: var(--theme-text);
   font-weight: 700;
 }
 
 .event-detail-card {
-  border: 1px solid rgba(155, 123, 69, 0.18);
+  border: 1px solid var(--theme-border);
   border-radius: 20px;
   padding: 1.25rem;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--theme-surface);
+  color: var(--theme-text);
+}
+
+.date-popup-inline {
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 24px;
+  padding: 1.5rem;
+  background: linear-gradient(180deg, var(--theme-surface-strong), var(--theme-surface));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+}
+
+.date-popup-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--theme-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--theme-text);
+}
+
+.date-popup-close:hover {
+  border-color: rgba(212, 175, 55, 0.5);
+  color: #d4af37;
 }
 
 .event-meta p {
@@ -822,12 +836,12 @@ onMounted(async () => {
 .volunteer-list li {
   padding: 0.2rem 0;
   font-size: 0.9rem;
-  color: #4c3c2b;
+  color: var(--theme-text);
 }
 
 .event-form .form-control {
   border-radius: 14px;
-  border-color: rgba(155, 123, 69, 0.2);
+  border-color: var(--theme-border);
   padding: 0.8rem 0.95rem;
 }
 
@@ -838,14 +852,18 @@ onMounted(async () => {
   justify-content: center;
   text-align: center;
   min-height: 220px;
-  border: 1px dashed rgba(155, 123, 69, 0.28);
+  border: 1px dashed var(--theme-border);
   border-radius: 20px;
-  color: #7a6a52;
-  background: rgba(255, 252, 246, 0.7);
+  color: var(--theme-muted);
+  background: var(--theme-surface);
 }
 
 .compact-empty {
   min-height: 320px;
+}
+
+.empty-state-compact {
+  min-height: 180px;
 }
 
 .volunteer-checkboxes {
@@ -857,9 +875,9 @@ onMounted(async () => {
 .volunteer-checkboxes .form-check {
   margin: 0;
   padding: 0.5rem 0.75rem;
-  border: 1px solid rgba(155, 123, 69, 0.2);
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: rgba(255, 252, 246, 0.7);
+  background: var(--theme-surface);
 }
 
 .volunteer-checkboxes .form-check-input {
@@ -873,17 +891,17 @@ onMounted(async () => {
 
 .volunteer-section {
   padding: 0.75rem;
-  border: 1px solid rgba(155, 123, 69, 0.15);
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: rgba(255, 252, 246, 0.5);
+  background: var(--theme-surface);
 }
 
 .volunteer-section .form-label {
-  color: #4c3c2b;
+  color: var(--theme-text);
 }
 
 .text-gold {
-  color: #9b7b45;
+  color: #d4af37;
 }
 
 @media (max-width: 991.98px) {
@@ -923,7 +941,7 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 252, 246, 0.92);
+    background: var(--theme-surface);
   }
 
   .calendar-day.is-outside-month {
@@ -949,22 +967,26 @@ onMounted(async () => {
   }
 
   .calendar-day.has-events .calendar-day-number {
-    background: #9b7b45;
-    color: #fff;
-    box-shadow: 0 8px 18px rgba(155, 123, 69, 0.28);
+    background: #d4af37;
+    color: #120d08;
+    box-shadow: 0 8px 18px rgba(212, 175, 55, 0.28);
   }
 
   .calendar-day.is-selected .calendar-day-number {
-    outline: 2px solid rgba(61, 49, 36, 0.55);
+    outline: 2px solid rgba(212, 175, 55, 0.55);
     outline-offset: 1px;
   }
 
-  .selected-day-panel {
+  .selected-day-hint {
     margin-top: 1rem;
   }
 
   .event-detail-card {
     padding: 1rem;
+  }
+
+  .date-popup-inline {
+    padding: 1.1rem;
   }
 }
 </style>

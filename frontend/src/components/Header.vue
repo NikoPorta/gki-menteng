@@ -1,8 +1,8 @@
 <template>
-  <header class="bg-white shadow-sm p-3 d-flex justify-content-between align-items-center">
+  <header class="app-header shadow-sm p-3 d-flex justify-content-between align-items-center">
     <div class="d-flex align-items-center">
       <button class="btn btn-link d-lg-none me-3 p-0" type="button" @click="$emit('toggle-sidebar')">
-        <i class="bi bi-list fs-4 text-dark"></i>
+        <i class="bi bi-list fs-4"></i>
       </button>
       <div>
         <h4 class="mb-0 d-none d-md-block">
@@ -18,11 +18,20 @@
     </div>
     
     <div class="d-flex align-items-center">
+      <button
+        class="btn btn-link header-action me-2 me-sm-3"
+        type="button"
+        :aria-label="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+        :title="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+        @click="$emit('toggle-theme')"
+      >
+        <i :class="theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill'" />
+      </button>
       <div class="me-4 d-none d-sm-block">
         <i class="bi bi-bell gold-text fs-5"></i>
       </div>
       <div v-if="authStore.isAuthenticated" class="dropdown">
-        <button class="btn btn-link dropdown-toggle text-dark" type="button" data-bs-toggle="dropdown">
+        <button class="btn btn-link dropdown-toggle text-reset" type="button" data-bs-toggle="dropdown">
           <i class="bi bi-person-circle fs-4"></i>
           <span class="ms-2 d-none d-sm-inline">{{ authStore.currentUser?.name || 'User' }}</span>
         </button>
@@ -45,10 +54,14 @@
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
+defineProps<{
+  theme: 'light' | 'dark'
+}>()
+
 const router = useRouter()
 const authStore = useAuthStore()
 
-defineEmits(['toggle-sidebar'])
+defineEmits(['toggle-sidebar', 'toggle-theme'])
 
 const handleLogout = () => {
   authStore.logout()

@@ -434,6 +434,7 @@ onMounted(async () => {
 <style scoped>
 .bible-view {
   min-height: 100%;
+  color: var(--theme-text);
 }
 
 .source-badge,
@@ -442,8 +443,8 @@ onMounted(async () => {
   align-items: center;
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
-  background: rgba(155, 123, 69, 0.12);
-  color: #6a542f;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--theme-text);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -458,7 +459,7 @@ onMounted(async () => {
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.78rem;
-  color: #9b7b45;
+  color: #d4af37;
 }
 
 .chapter-preview {
@@ -468,27 +469,28 @@ onMounted(async () => {
 }
 
 .verse-card {
-  border: 1px solid rgba(155, 123, 69, 0.18);
+  border: 1px solid var(--theme-border);
   border-radius: 20px;
   padding: 1.15rem 1.25rem;
-  background: linear-gradient(180deg, rgba(255, 252, 246, 0.96), rgba(247, 238, 219, 0.85));
+  background: linear-gradient(180deg, var(--theme-surface-strong), var(--theme-surface));
+  color: var(--theme-text);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .verse-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(70, 49, 24, 0.08);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
 }
 
 .verse-card.is-selected {
-  border-color: #9b7b45;
-  box-shadow: 0 14px 28px rgba(155, 123, 69, 0.18);
+  border-color: #d4af37;
+  box-shadow: 0 14px 28px rgba(212, 175, 55, 0.18);
 }
 
 .verse-reference {
   font-size: 0.84rem;
   font-weight: 700;
-  color: #9b7b45;
+  color: #d4af37;
   letter-spacing: 0.04em;
 }
 
@@ -500,15 +502,15 @@ onMounted(async () => {
   height: 2rem;
   margin-right: 0.75rem;
   border-radius: 999px;
-  background: rgba(155, 123, 69, 0.14);
-  color: #6a542f;
+  background: rgba(212, 175, 55, 0.14);
+  color: var(--theme-text);
   font-weight: 700;
 }
 
 .verse-text {
   font-size: 1rem;
   line-height: 1.8;
-  color: #3d3124;
+  color: var(--theme-text);
 }
 
 .bible-form .form-control,
@@ -516,7 +518,7 @@ onMounted(async () => {
 .filter-shell .form-control,
 .filter-shell .form-select {
   border-radius: 14px;
-  border-color: rgba(155, 123, 69, 0.2);
+  border-color: var(--theme-border);
   padding: 0.8rem 0.95rem;
 }
 
@@ -527,10 +529,10 @@ onMounted(async () => {
   justify-content: center;
   text-align: center;
   min-height: 220px;
-  border: 1px dashed rgba(155, 123, 69, 0.28);
+  border: 1px dashed var(--theme-border);
   border-radius: 20px;
-  color: #7a6a52;
-  background: rgba(255, 252, 246, 0.7);
+  color: var(--theme-muted);
+  background: var(--theme-surface);
 }
 
 .compact-empty {
